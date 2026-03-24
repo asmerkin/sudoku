@@ -5,8 +5,13 @@ const PRINT_DIFF_LABEL = { easy: 'Fácil', medium: 'Medio', hard: 'Difícil', ex
 export function usePrint() {
   function printSudokus(seedValue, difficulty) {
     const numericBase = hashSeed(seedValue)
-    const container = document.getElementById('printContainer')
-    if (!container) return
+    let container = document.getElementById('printContainer')
+    if (!container) {
+      container = document.createElement('div')
+      container.id = 'printContainer'
+      container.className = 'print-container'
+      document.body.appendChild(container)
+    }
 
     let html = '<div class="print-page">'
     html += `<div class="print-header">Sudoku — ${PRINT_DIFF_LABEL[difficulty]} — Seed: ${seedValue}</div>`

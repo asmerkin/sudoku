@@ -110,7 +110,7 @@ body {
 
 @media print {
   @page { margin: 5mm; }
-  body > *:not(.print-container) { display: none !important; }
+  #app { display: none !important; }
   .print-container { display: block !important; margin: 0; padding: 0; }
   .print-page {
     width: 100%; padding: 0 2mm; page-break-after: always; page-break-inside: avoid;

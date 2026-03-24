@@ -16,7 +16,6 @@ import NumPad from './components/NumPad.vue'
 import ActionBar from './components/ActionBar.vue'
 import WinOverlay from './components/WinOverlay.vue'
 import AppToast from './components/AppToast.vue'
-import PrintContainer from './components/PrintContainer.vue'
 
 const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerMove } = useGameState()
 const timer = useTimer()
@@ -199,7 +198,6 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       @undo="onUndo"
     />
 
-    <PrintContainer />
     <AppToast />
   </div>
 </template>
