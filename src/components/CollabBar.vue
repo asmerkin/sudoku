@@ -10,14 +10,8 @@ const emit = defineEmits(['create-room', 'join-room', 'copy-room-id'])
 const showJoinInput = ref(false)
 const joinInput = ref('')
 
-const roomUrl = computed(() => {
-  if (!props.collab.roomId) return ''
-  const base = window.location.origin + window.location.pathname
-  return `${base}?room=${props.collab.roomId}`
-})
-
 const isConnected = computed(() => props.collab.conns.some((c) => c.open))
-const playerCount = computed(() => props.collab.conns.filter((c) => c.open).length)
+const playerCount = computed(() => props.collab.conns.filter((c) => c.open).length + 1)
 
 const peerBadges = computed(() => {
   return props.collab.conns
@@ -43,17 +37,6 @@ function onJoinKeydown(e) {
            max-w-[calc(var(--cell-size)*9)] w-full mb-3 animate-fade-up"
     style="animation-delay: 0.02s"
   >
-    <span
-      v-if="collab.roomId"
-      class="font-mono text-[0.6rem] font-semibold text-accent bg-surface border border-border
-             py-0.5 px-2.5 rounded-md cursor-pointer transition-all duration-250
-             hover:border-accent hover:shadow-(--glow) truncate max-w-64"
-      title="Click para copiar link"
-      @click="emit('copy-room-id', collab.roomId)"
-    >
-      🔗 {{ roomUrl }}
-    </span>
-
     <template v-if="!collab.roomId">
       <button
         class="bg-surface border border-border text-text-dim font-sans text-[0.62rem] font-medium
@@ -85,22 +68,41 @@ function onJoinKeydown(e) {
       />
     </template>
 
-    <span v-if="collab.roomId" class="font-mono text-[0.55rem] text-text-muted flex items-center gap-1.5">
-      <span
-        class="w-1.5 h-1.5 rounded-full"
-        :class="isConnected ? 'bg-accent shadow-[0_0_6px_var(--accent)]' : 'bg-text-muted'"
-      />
-      <span>{{ playerCount > 0 ? `${playerCount + 1} jugadores` : 'Esperando...' }}</span>
-    </span>
+    <template v-if="collab.roomId">
+      <!-- Copy link button -->
+      <button
+        class="bg-surface border border-border text-text-dim font-sans text-[0.62rem] font-medium
+               tracking-wide px-2.5 h-7.5 rounded-btn cursor-pointer transition-all duration-250
+               uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)
+               flex items-center gap-1"
+        @click="emit('copy-room-id', collab.roomId)"
+      >
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+        </svg>
+        Copiar link
+      </button>
 
-    <span
-      v-for="badge in peerBadges"
-      :key="badge.id"
-      class="inline-flex items-center gap-1 font-mono text-[0.5rem]
-             py-0.5 px-1.5 rounded bg-surface border border-border"
-    >
-      <span class="w-1.5 h-1.5 rounded-full" :style="{ background: badge.color }" />
-      {{ badge.label }}
-    </span>
+      <!-- Connected count -->
+      <span class="font-mono text-[0.55rem] text-text-muted flex items-center gap-1.5">
+        <span
+          class="w-1.5 h-1.5 rounded-full"
+          :class="isConnected ? 'bg-accent shadow-[0_0_6px_var(--accent)]' : 'bg-text-muted'"
+        />
+        <span>{{ playerCount }} conectado{{ playerCount !== 1 ? 's' : '' }}</span>
+      </span>
+
+      <!-- Peer badges -->
+      <span
+        v-for="badge in peerBadges"
+        :key="badge.id"
+        class="inline-flex items-center gap-1 font-mono text-[0.5rem]
+               py-0.5 px-1.5 rounded bg-surface border border-border"
+      >
+        <span class="w-1.5 h-1.5 rounded-full" :style="{ background: badge.color }" />
+        {{ badge.label }}
+      </span>
+    </template>
   </div>
 </template>
