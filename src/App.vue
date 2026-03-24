@@ -116,7 +116,8 @@ function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.diffi
 function onCreateRoom() { createRoom() }
 function onJoinRoom(roomId) { joinRoom(roomId) }
 function onCopyRoomId(roomId) {
-  navigator.clipboard.writeText(roomId).then(() => toast.show('Room ID copiado'))
+  const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
+  navigator.clipboard.writeText(url).then(() => toast.show('Link copiado'))
 }
 
 onMounted(() => {

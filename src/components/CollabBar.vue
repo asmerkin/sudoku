@@ -10,6 +10,12 @@ const emit = defineEmits(['create-room', 'join-room', 'copy-room-id'])
 const showJoinInput = ref(false)
 const joinInput = ref('')
 
+const roomUrl = computed(() => {
+  if (!props.collab.roomId) return ''
+  const base = window.location.origin + window.location.pathname
+  return `${base}?room=${props.collab.roomId}`
+})
+
 const isConnected = computed(() => props.collab.conns.some((c) => c.open))
 const playerCount = computed(() => props.collab.conns.filter((c) => c.open).length)
 
@@ -39,13 +45,13 @@ function onJoinKeydown(e) {
   >
     <span
       v-if="collab.roomId"
-      class="font-mono text-[0.7rem] font-semibold text-accent bg-surface border border-border
+      class="font-mono text-[0.6rem] font-semibold text-accent bg-surface border border-border
              py-0.5 px-2.5 rounded-md cursor-pointer transition-all duration-250
-             hover:border-accent hover:shadow-(--glow)"
-      title="Click para copiar"
+             hover:border-accent hover:shadow-(--glow) truncate max-w-64"
+      title="Click para copiar link"
       @click="emit('copy-room-id', collab.roomId)"
     >
-      {{ collab.roomId }}
+      🔗 {{ roomUrl }}
     </span>
 
     <template v-if="!collab.roomId">
