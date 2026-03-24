@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-thick: var(--border-thick);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-error: var(--error);
+  --color-error-dim: var(--error-dim);
+  --color-given: var(--given);
+  --color-input: var(--input);
+  --color-highlight: var(--highlight);
+  --color-overlay-bg: var(--overlay-bg);
+  --color-numpad-bg: var(--numpad-bg);
+  --radius-btn: 10px;
+}
+
+/* ── Theme tokens ── */
+[data-theme="dark"] {
+  --bg: #0e0e12;
+  --bg-gradient: linear-gradient(145deg, #0e0e12 0%, #161620 50%, #0e0e12 100%);
+  --surface: rgba(255,255,255,0.04);
+  --surface-hover: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-thick: rgba(255,255,255,0.22);
+  --text: #eae8e4;
+  --text-dim: #9a96a0;
+  --text-muted: #5c5866;
+  --accent: #6ee7b7;
+  --accent-dim: rgba(110,231,183,0.12);
+  --accent-glow: rgba(110,231,183,0.06);
+  --error: #fb7185;
+  --error-dim: rgba(251,113,133,0.12);
+  --given: #eae8e4;
+  --input: #6ee7b7;
+  --highlight: rgba(110,231,183,0.05);
+  --overlay-bg: rgba(14,14,18,0.94);
+  --numpad-bg: rgba(255,255,255,0.03);
+  --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --glow: 0 0 16px rgba(110,231,183,0.1);
+}
+
+[data-theme="light"] {
+  --bg: #f4f3f0;
+  --bg-gradient: linear-gradient(145deg, #f4f3f0 0%, #eae9e6 50%, #f4f3f0 100%);
+  --surface: rgba(0,0,0,0.035);
+  --surface-hover: rgba(0,0,0,0.06);
+  --border: rgba(0,0,0,0.10);
+  --border-thick: rgba(0,0,0,0.28);
+  --text: #1a1a20;
+  --text-dim: #6b6775;
+  --text-muted: #a09aa8;
+  --accent: #0d9268;
+  --accent-dim: rgba(13,146,104,0.10);
+  --accent-glow: rgba(13,146,104,0.05);
+  --error: #e11d48;
+  --error-dim: rgba(225,29,72,0.08);
+  --given: #1a1a20;
+  --input: #0d9268;
+  --highlight: rgba(13,146,104,0.06);
+  --overlay-bg: rgba(244,243,240,0.94);
+  --numpad-bg: rgba(0,0,0,0.025);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --glow: none;
+}
+
+:root {
+  --cell-size: 48px;
+}
+
+body {
+  background: var(--bg-gradient);
+  transition: background 0.25s cubic-bezier(0.4,0,0.2,1), color 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── Entrance animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+
+/* ── Peer cursor pulse ── */
+@keyframes peerPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+/* ── Slider spring transition ── */
+.slider-spring {
+  transition: left 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), transform 0.15s, box-shadow 0.15s;
+}
+.slider-spring-width {
+  transition: width 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* ── Print styles ── */
+.print-container { display: none; }
+
+@media print {
+  @page { margin: 5mm; }
+  body > *:not(.print-container) { display: none !important; }
+  .print-container { display: block !important; margin: 0; padding: 0; }
+  .print-page {
+    width: 100%; padding: 0 2mm; page-break-after: always; page-break-inside: avoid;
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto auto;
+    gap: 3mm; align-content: start;
+  }
+  .print-page:last-child { page-break-after: avoid; }
+  .print-header {
+    grid-column: 1/-1; text-align: center; font-family: 'Outfit', sans-serif;
+    font-size: 14pt; font-weight: 600; color: #333; padding-bottom: 1mm; border-bottom: 0.5pt solid #ccc;
+  }
+  .print-sudoku { display: flex; flex-direction: column; align-items: center; padding: 1mm 0; }
+  .print-sudoku .print-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 6pt; color: #999;
+    margin-bottom: 0.5mm; letter-spacing: 0.1em;
+  }
+  .print-grid { border-collapse: collapse; }
+  .print-grid td {
+    width: 9mm; height: 9mm; text-align: center; vertical-align: middle;
+    font-family: 'JetBrains Mono', monospace; font-size: 12pt; font-weight: 600;
+    color: #1a1a1e; border: 0.3pt solid #bbb; padding: 0; line-height: 1;
+  }
+  .print-grid td.empty { color: transparent; }
+  .print-grid td:nth-child(3n) { border-right: 1.5pt solid #555; }
+  .print-grid td:nth-child(1) { border-left: 1.5pt solid #555; }
+  .print-grid tr:nth-child(3n) td { border-bottom: 1.5pt solid #555; }
+  .print-grid tr:nth-child(1) td { border-top: 1.5pt solid #555; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  :root { --cell-size: 38px; }
+}
