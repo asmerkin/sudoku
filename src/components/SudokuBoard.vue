@@ -5,6 +5,7 @@ import SudokuCell from './SudokuCell.vue'
 const props = defineProps({
   state: Object,
   peerCursors: Object,
+  won: Boolean,
 })
 
 const emit = defineEmits(['select'])
@@ -69,6 +70,7 @@ const cells = computed(() => {
       :notes="cell.notes"
       :peer-cursors="cell.peerCursors"
       :owner-color="cell.ownerColor"
+      :won="won"
       @select="(r, c) => emit('select', r, c)"
     />
   </div>

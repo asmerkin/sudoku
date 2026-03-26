@@ -140,6 +140,43 @@ body {
   .print-grid tr:nth-child(1) td { border-top: 1.5pt solid #555; }
 }
 
+/* ── Win celebration ── */
+@keyframes confettiRise {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(var(--drift)) rotate(var(--rotation));
+    opacity: 0;
+  }
+}
+
+.confetti-particle {
+  animation-name: confettiRise;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes winPulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 20px 4px var(--accent-dim); }
+}
+
+.win-glow > .board-grid {
+  animation: winPulse 1.5s ease-in-out 3;
+  border-color: var(--accent);
+}
+
+@keyframes cellFlash {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: var(--accent-dim); }
+}
+
+.win-cell-flash {
+  animation: cellFlash 0.6s ease-out both;
+}
+
 /* ── Mobile ── */
 @media (max-width: 480px) {
   :root { --cell-size: 38px; }

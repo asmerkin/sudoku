@@ -11,6 +11,7 @@ const props = defineProps({
   notes: Set,
   peerCursors: Array,
   ownerColor: String,
+  won: Boolean,
 })
 
 const emit = defineEmits(['select'])
@@ -29,8 +30,12 @@ const emit = defineEmits(['select'])
       'bg-highlight': isHighlighted && !isSelected,
       'bg-error-dim text-error!': isError,
       'bg-accent-glow': isSameNumber && !isSelected,
+      'win-cell-flash': won,
     }"
-    :style="ownerColor && !isGiven && !isError ? { color: ownerColor } : {}"
+    :style="[
+      ownerColor && !isGiven && !isError ? { color: ownerColor } : {},
+      won ? { animationDelay: (row * 9 + col) * 20 + 'ms' } : {},
+    ]"
     @click="emit('select', row, col)"
   >
     <template v-if="isGiven || value !== 0">{{ value }}</template>

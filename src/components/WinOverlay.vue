@@ -1,22 +1,79 @@
 <script setup>
-defineProps({
+import { ref, watch, onUnmounted } from 'vue'
+
+const props = defineProps({
   show: Boolean,
   seed: String,
   time: String,
   mistakes: Number,
 })
+
+const EMOJIS = ['🎉', '✨', '🌟', '🎊', '💫', '🏆', '⭐', '🥳']
+const particles = ref([])
+let cleanupTimer = null
+
+watch(() => props.show, (val) => {
+  if (val) spawnConfetti()
+  else particles.value = []
+})
+
+function spawnConfetti() {
+  const arr = []
+  for (let i = 0; i < 35; i++) {
+    arr.push({
+      id: i,
+      emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+      left: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 2,
+      drift: (Math.random() - 0.5) * 60,
+      rotation: Math.random() * 720 - 360,
+      size: 16 + Math.random() * 12,
+    })
+  }
+  particles.value = arr
+  clearTimeout(cleanupTimer)
+  cleanupTimer = setTimeout(() => { particles.value = [] }, 6000)
+}
+
+onUnmounted(() => clearTimeout(cleanupTimer))
 </script>
 
 <template>
+  <!-- Confetti burst -->
+  <Teleport to="body">
+    <div v-if="particles.length" class="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      <span
+        v-for="p in particles"
+        :key="p.id"
+        class="absolute confetti-particle"
+        :style="{
+          left: p.left + '%',
+          bottom: '-30px',
+          fontSize: p.size + 'px',
+          animationDelay: p.delay + 's',
+          animationDuration: p.duration + 's',
+          '--drift': p.drift + 'px',
+          '--rotation': p.rotation + 'deg',
+        }"
+      >{{ p.emoji }}</span>
+    </div>
+  </Teleport>
+
+  <!-- Stats banner -->
   <div
-    class="absolute inset-0 bg-overlay-bg flex flex-col items-center justify-center
-           rounded-md transition-opacity duration-500 backdrop-blur-sm"
-    :class="show ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'"
+    class="overflow-hidden transition-all duration-500 ease-out"
+    :class="show ? 'max-h-24 opacity-100 mb-3.5' : 'max-h-0 opacity-0'"
   >
-    <h2 class="font-bold text-2xl text-accent mb-1 tracking-tight">Completado</h2>
-    <p class="text-text-dim font-mono text-[0.65rem]">
-      Seed: {{ seed }} · {{ time }} · {{ mistakes }}
-      error{{ mistakes !== 1 ? 'es' : '' }}
-    </p>
+    <div
+      class="bg-surface border border-accent/30 rounded-lg px-4 py-2.5 text-center
+             shadow-[0_0_20px_var(--accent-glow)]"
+    >
+      <p class="font-bold text-accent text-sm tracking-tight">🎉 Completado! 🎉</p>
+      <p class="text-text-dim font-mono text-[0.65rem] mt-0.5">
+        Seed: {{ seed }} · {{ time }} · {{ mistakes }}
+        error{{ mistakes !== 1 ? 'es' : '' }}
+      </p>
+    </div>
   </div>
 </template>

@@ -187,19 +187,25 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
 
     <TimerBar :mistakes="state.mistakes" :time="timer.display.value" />
 
-    <div class="relative mb-3.5 animate-fade-up" style="animation-delay: 0.12s">
+    <div
+      class="relative mb-3.5 animate-fade-up"
+      :class="{ 'win-glow': showWin }"
+      style="animation-delay: 0.12s"
+    >
       <SudokuBoard
         :state="state"
         :peer-cursors="collab.peerCursors"
+        :won="showWin"
         @select="onSelect"
       />
-      <WinOverlay
-        :show="showWin"
-        :seed="state.seed"
-        :time="timer.display.value"
-        :mistakes="state.mistakes"
-      />
     </div>
+
+    <WinOverlay
+      :show="showWin"
+      :seed="state.seed"
+      :time="timer.display.value"
+      :mistakes="state.mistakes"
+    />
 
     <NumPad :board="state.board" @number="onNumber" />
 
