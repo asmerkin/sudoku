@@ -7,6 +7,7 @@ import { useToast } from './composables/useToast.js'
 import { useCollab } from './composables/useCollab.js'
 import { usePrint } from './composables/usePrint.js'
 import { useI18n } from './composables/useI18n.js'
+import { useHaptics } from './composables/useHaptics.js'
 
 import ThemeToggle from './components/ThemeToggle.vue'
 import LangToggle from './components/LangToggle.vue'
@@ -24,6 +25,7 @@ const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
 const { t } = useI18n()
+const haptics = useHaptics()
 
 const showWin = ref(false)
 const pendingAction = ref(null)
@@ -100,9 +102,12 @@ const playerRanking = computed(() => {
   return stats.sort((a, b) => b.correct - a.correct || a.errors - b.errors)
 })
 
+watch(() => state.mistakes, () => { haptics.error() })
+
 watch(() => state.won, (won) => {
   if (won) {
     timer.stop()
+    haptics.success()
     setTimeout(() => { showWin.value = true }, 300)
   }
 })
@@ -117,6 +122,7 @@ function onNewGame() {
   const seed = encodeSeed(randomSeed(), state.difficulty)
   state.seedDisplay = seed
   startGame(seed)
+  haptics.medium()
   if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
 }
 
@@ -141,20 +147,27 @@ function onDifficultyChange() {
 function onSelect(r, c) {
   select(r, c)
   broadcastCursor(r, c)
+  haptics.selection()
 }
 
 function onNumber(n) {
   const move = placeNumber(n, false, collab.myColor)
-  if (move) broadcastMove(move)
+  if (move) {
+    broadcastMove(move)
+    haptics.light()
+  }
 }
 
 function onErase() {
   const move = eraseCell()
-  if (move) broadcastMove(move)
+  if (move) {
+    broadcastMove(move)
+    haptics.light()
+  }
 }
 
-function onUndo() { undo() }
-function onToggleNotes() { toggleNotes() }
+function onUndo() { undo(); haptics.light() }
+function onToggleNotes() { toggleNotes(); haptics.selection() }
 function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
 function onCreateRoom() { pendingAction.value = { type: 'create' } }
 function onJoinRoom(roomId) { pendingAction.value = { type: 'join', roomId } }
@@ -198,21 +211,6 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
 
 <template>
   <div class="flex flex-col items-center w-full min-h-dvh p-5 px-4 font-sans text-text select-none">
-    <!-- GitHub corner ribbon (github.com/tholman/github-corners) -->
-    <a
-      href="https://github.com/asmerkin/sudoku"
-      target="_blank"
-      rel="noopener"
-      class="github-corner fixed top-0 right-0 z-40"
-      :aria-label="t('viewOnGitHub')"
-    >
-      <svg width="70" height="70" viewBox="0 0 250 250" style="color:var(--bg)">
-        <path d="M0 0l115 115h15l12 27 108 108V0z" class="fill-accent opacity-80 hover:opacity-100 transition-opacity duration-250" />
-        <path d="M128.3 109c-14.5-9.3-9.3-19.4-9.3-19.4 3-6.9 1.5-11 1.5-11-1.3-6.6 2.9-2.3 2.9-2.3 3.9 4.6 2.1 11 2.1 11-2.6 10.3 5.1 14.6 8.9 15.9" fill="currentColor" style="transform-origin:130px 106px" class="octo-arm" />
-        <path d="M115 115s4.5 2.9 6.2.7l15.8-15.7c3-2 5.5-2.4 7.5-2.1-7.9-10-13.7-23.2 1.8-38.9 4.5-4.5 9.8-6.6 15.2-6.8.5-1.5 3.2-7.2 11.1-10.6 0 0 4.5 2.2 6.9 15.5 4 2.3 7.8 5.3 11.2 8.8 3.4 3.4 6.4 7.3 8.6 11.4 13.3 2.5 15.5 7 15.5 7-3.5 8-9.2 10.8-10.5 11.3-.3 5.6-2.2 10.8-6.7 15.3-16 16-28.9 10-39.3 1.9-0.3 2.5-1.4 6.2-5.1 10l-12.7 12.6c-1.1 1.1.5 5.1.7 5.1z" fill="currentColor" class="octo-body" />
-      </svg>
-    </a>
-
     <header class="text-center mb-5 relative animate-fade-up">
       <h1 class="font-bold text-3xl tracking-tight text-text leading-none transition-colors duration-250">
         sudo<span class="text-accent transition-colors duration-250">ku</span>
@@ -232,7 +230,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       @create-room="onCreateRoom"
       @join-room="onJoinRoom"
       @copy-room-id="onCopyRoomId"
-      @ptt-start="setPTT(true)"
+      @ptt-start="setPTT(true); haptics.medium()"
       @ptt-end="setPTT(false)"
     />
 
@@ -281,6 +279,21 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
     />
 
     <AppToast />
+
+    <!-- GitHub link -->
+    <a
+      href="https://github.com/asmerkin/sudoku"
+      target="_blank"
+      rel="noopener"
+      class="mt-6 mb-2 inline-flex items-center gap-1.5 text-text-muted font-mono text-[0.55rem]
+             tracking-wide opacity-40 hover:opacity-80 transition-opacity duration-250"
+      :aria-label="t('viewOnGitHub')"
+    >
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+      </svg>
+      GitHub
+    </a>
 
     <!-- Name modal for URL-based join -->
     <Teleport to="body">

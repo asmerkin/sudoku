@@ -124,47 +124,54 @@ function onJoinKeydown(e) {
         {{ badge.label }}
       </span>
 
-      <!-- Push-to-talk button -->
-      <button
-        v-if="micReady"
-        class="bg-surface border border-border text-text-dim font-sans text-[0.62rem] font-medium
-               tracking-wide px-2 h-7.5 rounded-btn cursor-pointer transition-all duration-150
-               flex items-center gap-1 select-none touch-none"
-        :class="isTalking
-          ? 'border-accent text-accent bg-accent-glow shadow-(--glow)'
-          : 'hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)'"
-        :title="t('pushToTalk')"
-        @pointerdown.prevent="emit('ptt-start')"
-        @pointerup.prevent="emit('ptt-end')"
-        @pointerleave="emit('ptt-end')"
-        @contextmenu.prevent
-      >
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-          <path d="M19 10v2a7 7 0 01-14 0v-2" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
-        <span
-          v-if="isTalking"
-          class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"
-        />
-      </button>
-
-      <!-- Mic error indicator -->
-      <span
-        v-else-if="micError"
-        class="inline-flex items-center text-text-muted"
-        :title="t('micError')"
-      >
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="1" y1="1" x2="23" y2="23" />
-          <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
-          <path d="M17 16.95A7 7 0 015 12v-2m14 0v2c0 .87-.16 1.71-.46 2.49" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
-      </span>
     </template>
   </div>
+
+  <!-- PTT floating action button -->
+  <Teleport to="body">
+    <button
+      v-if="collab.roomId && micReady"
+      class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full
+             flex items-center justify-center
+             bg-surface border-2 border-border text-text-dim
+             cursor-pointer transition-all duration-150 select-none touch-none
+             shadow-lg active:scale-95"
+      :class="isTalking
+        ? 'border-accent text-accent bg-accent-glow shadow-[0_0_20px_var(--accent)]  scale-110'
+        : 'hover:border-accent hover:text-accent hover:shadow-[0_0_12px_var(--accent)]'"
+      :title="t('pushToTalk')"
+      @pointerdown.prevent="emit('ptt-start')"
+      @pointerup.prevent="emit('ptt-end')"
+      @pointerleave="emit('ptt-end')"
+      @contextmenu.prevent
+    >
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+        <path d="M19 10v2a7 7 0 01-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+      <span
+        v-if="isTalking"
+        class="absolute top-0 right-0 w-3 h-3 rounded-full bg-accent animate-pulse"
+      />
+    </button>
+
+    <!-- Mic error indicator (small fixed badge) -->
+    <span
+      v-else-if="collab.roomId && micError"
+      class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full
+             flex items-center justify-center
+             bg-surface border-2 border-border text-text-muted opacity-50"
+      :title="t('micError')"
+    >
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23" />
+        <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
+        <path d="M17 16.95A7 7 0 015 12v-2m14 0v2c0 .87-.16 1.71-.46 2.49" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    </span>
+  </Teleport>
 </template>
