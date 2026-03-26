@@ -38,6 +38,15 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
   }
 
+  function broadcastPeerList() {
+    const peers = {}
+    peers[collab.peer.id] = { color: collab.myColor, name: collab.myName }
+    for (const [id, data] of Object.entries(collab.peerCursors)) {
+      peers[id] = { color: data.color, name: data.name }
+    }
+    broadcast({ type: 'peer-list', peers })
+  }
+
   function handlePeerData(peerId, data) {
     if (data.type === 'move') {
       onMove?.(data.move)
@@ -68,6 +77,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
         nextColorIdx++
         collab.peerCursors[peerId] = { r: -1, c: -1, color, name: data.name || '' }
         sendToPeer(peerId, { type: 'your-color', color, name: collab.myName })
+        broadcastPeerList()
       } else {
         // Guest received hello from host
         collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7', name: data.name || '' }
@@ -79,6 +89,24 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       // your-color always comes from the host, so peerId is the host
       if (data.name && collab.peerCursors[peerId]) {
         collab.peerCursors[peerId].name = data.name
+      }
+    } else if (data.type === 'peer-list') {
+      const myId = collab.peer?.id
+      const peerIds = new Set(Object.keys(data.peers))
+      for (const [id, info] of Object.entries(data.peers)) {
+        if (id === myId) continue
+        const existing = collab.peerCursors[id]
+        if (existing) {
+          existing.color = info.color
+          existing.name = info.name
+        } else {
+          collab.peerCursors[id] = { r: -1, c: -1, color: info.color, name: info.name }
+        }
+      }
+      for (const id of Object.keys(collab.peerCursors)) {
+        if (id !== myId && !peerIds.has(id)) {
+          delete collab.peerCursors[id]
+        }
       }
     }
   }
@@ -95,6 +123,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       collab.conns = collab.conns.filter((c) => c !== conn)
       delete collab.peerCursors[conn.peer]
       updateConnectedCount()
+      if (collab.isHost) broadcastPeerList()
     })
   }
 

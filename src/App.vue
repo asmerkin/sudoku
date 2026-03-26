@@ -23,8 +23,8 @@ const toast = useToast()
 const { printSudokus } = usePrint()
 
 const showWin = ref(false)
-const pendingRoomId = ref(null)
-const joinNameInput = ref('')
+const pendingAction = ref(null)
+const nameInput = ref('')
 
 const {
   collab,
@@ -116,24 +116,26 @@ function onErase() {
 function onUndo() { undo() }
 function onToggleNotes() { toggleNotes() }
 function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
-function onCreateRoom() { createRoom() }
-function onJoinRoom(roomId) { joinRoom(roomId) }
+function onCreateRoom() { pendingAction.value = { type: 'create' } }
+function onJoinRoom(roomId) { pendingAction.value = { type: 'join', roomId } }
 function onCopyRoomId(roomId) {
   const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
   navigator.clipboard.writeText(url).then(() => toast.show('Link copiado'))
 }
 
-function confirmJoinName() {
-  const name = joinNameInput.value.trim() || 'Anón'
+function confirmName() {
+  const name = nameInput.value.trim() || 'Anón'
   collab.myName = name
-  const roomId = pendingRoomId.value
-  pendingRoomId.value = null
-  joinRoom(roomId)
+  const action = pendingAction.value
+  pendingAction.value = null
+  nameInput.value = ''
+  if (action.type === 'create') createRoom()
+  else joinRoom(action.roomId)
 }
 
 onMounted(() => {
   const urlRoom = new URLSearchParams(window.location.search).get('room')
-  if (urlRoom) pendingRoomId.value = urlRoom
+  if (urlRoom) pendingAction.value = { type: 'join', roomId: urlRoom }
 })
 
 function onKeydown(e) {
@@ -220,31 +222,31 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
 
     <!-- Name modal for URL-based join -->
     <Teleport to="body">
-      <div v-if="pendingRoomId" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div v-if="pendingAction" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="bg-surface border border-border rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl w-80 animate-fade-up">
           <h2 class="text-xl font-bold text-text tracking-tight">
-            Unirse a partida
+            {{ pendingAction.type === 'create' ? 'Crear sala' : 'Unirse a partida' }}
           </h2>
           <p class="text-text-muted text-xs text-center font-mono">
             Ingresá tu nombre para que los demás te vean
           </p>
           <input
-            v-model="joinNameInput"
+            v-model="nameInput"
             class="bg-bg border border-border text-text font-sans text-base
                    py-2.5 px-4 rounded-lg w-full outline-none text-center
                    focus:border-accent focus:shadow-(--glow) transition-all duration-250"
             placeholder="Tu nombre..."
             maxlength="12"
             autofocus
-            @keydown.enter="confirmJoinName"
+            @keydown.enter="confirmName"
           />
           <button
             class="bg-accent text-bg font-sans text-sm font-bold
                    tracking-wide px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-250
                    uppercase hover:brightness-110 w-full"
-            @click="confirmJoinName"
+            @click="confirmName"
           >
-            Entrar
+            {{ pendingAction.type === 'create' ? 'Crear' : 'Entrar' }}
           </button>
         </div>
       </div>

@@ -9,29 +9,24 @@ const emit = defineEmits(['create-room', 'join-room', 'copy-room-id'])
 
 const showJoinInput = ref(false)
 const joinInput = ref('')
-const nameInput = ref('')
 
 const isConnected = computed(() => props.collab.conns.some((c) => c.open))
-const playerCount = computed(() => props.collab.conns.filter((c) => c.open).length + 1)
+const playerCount = computed(() => Object.keys(props.collab.peerCursors).length + 1)
 
 const peerBadges = computed(() => {
-  return props.collab.conns
-    .filter((c) => c.open)
-    .map((conn, i) => ({
-      id: conn.peer,
-      label: props.collab.peerCursors[conn.peer]?.name || 'P' + (i + 2),
-      color: props.collab.peerCursors[conn.peer]?.color || '#f59e0b',
-    }))
+  return Object.entries(props.collab.peerCursors).map(([id, data]) => ({
+    id,
+    label: data.name || 'P',
+    color: data.color || '#f59e0b',
+  }))
 })
 
 function onCreateRoom() {
-  props.collab.myName = nameInput.value.trim() || 'Anón'
   emit('create-room')
 }
 
 function onJoinSubmit() {
   if (!joinInput.value.trim()) return
-  props.collab.myName = nameInput.value.trim() || 'Anón'
   emit('join-room', joinInput.value.trim())
   showJoinInput.value = false
 }
@@ -48,14 +43,6 @@ function onJoinKeydown(e) {
     style="animation-delay: 0.02s"
   >
     <template v-if="!collab.roomId">
-      <input
-        v-model="nameInput"
-        class="bg-surface border border-border text-text font-sans text-[0.65rem]
-               py-0.5 px-2 rounded-md w-24 outline-none text-center
-               focus:border-accent focus:shadow-(--glow) transition-all duration-250"
-        placeholder="Nombre..."
-        maxlength="12"
-      />
       <button
         class="bg-surface border border-border text-text-dim font-sans text-[0.62rem] font-medium
                tracking-wide px-2.5 h-7.5 rounded-btn cursor-pointer transition-all duration-250
