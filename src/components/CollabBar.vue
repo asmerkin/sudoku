@@ -11,7 +11,7 @@ const props = defineProps({
   micError: Boolean,
 })
 
-const emit = defineEmits(['create-room', 'join-room', 'copy-room-id', 'ptt-start', 'ptt-end'])
+const emit = defineEmits(['create-room', 'join-room', 'copy-room-id', 'leave-room', 'ptt-start', 'ptt-end'])
 
 const showJoinInput = ref(false)
 const joinInput = ref('')
@@ -124,6 +124,21 @@ function onJoinKeydown(e) {
         {{ badge.label }}
       </span>
 
+      <!-- Leave room button -->
+      <button
+        class="bg-surface border border-border text-text-muted font-sans text-[0.62rem] font-medium
+               tracking-wide px-2.5 h-7.5 rounded-btn cursor-pointer transition-all duration-250
+               uppercase hover:border-red-400 hover:text-red-400
+               flex items-center gap-1"
+        @click="emit('leave-room')"
+      >
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        {{ t('leaveRoom') }}
+      </button>
     </template>
   </div>
 

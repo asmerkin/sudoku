@@ -36,6 +36,7 @@ const {
   voice,
   createRoom,
   joinRoom,
+  leaveRoom,
   broadcastMove,
   broadcastCursor,
   broadcastFullState,
@@ -171,6 +172,11 @@ function onToggleNotes() { toggleNotes(); haptics.selection() }
 function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
 function onCreateRoom() { pendingAction.value = { type: 'create' } }
 function onJoinRoom(roomId) { pendingAction.value = { type: 'join', roomId } }
+function onLeaveRoom() {
+  leaveRoom()
+  haptics.medium()
+}
+
 function onCopyRoomId(roomId) {
   const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
   navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
@@ -230,6 +236,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       @create-room="onCreateRoom"
       @join-room="onJoinRoom"
       @copy-room-id="onCopyRoomId"
+      @leave-room="onLeaveRoom"
       @ptt-start="setPTT(true); haptics.medium()"
       @ptt-end="setPTT(false)"
     />
@@ -267,6 +274,9 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       :time="timer.display.value"
       :mistakes="state.mistakes"
       :ranking="playerRanking"
+      :is-host="collab.isHost"
+      :is-multiplayer="!!collab.roomId"
+      @new-game="onNewGame"
     />
 
     <NumPad :board="state.board" @number="onNumber" />

@@ -29,6 +29,9 @@ export const messages = {
     viewOnGitHub: 'Ver en GitHub',
     pushToTalk: 'Mantené para hablar',
     micError: 'Micrófono no disponible',
+    leaveRoom: 'Salir',
+    newGame: 'Nueva partida',
+    playAgain: 'Jugar de nuevo',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -60,5 +63,8 @@ export const messages = {
     viewOnGitHub: 'View on GitHub',
     pushToTalk: 'Hold to talk',
     micError: 'Microphone unavailable',
+    leaveRoom: 'Leave',
+    newGame: 'New game',
+    playAgain: 'Play again',
   },
 }

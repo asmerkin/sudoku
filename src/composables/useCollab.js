@@ -177,12 +177,31 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     })
   }
 
+  function leaveRoom() {
+    collab.conns.forEach((c) => { try { c.close() } catch {} })
+    collab.conns = []
+    if (collab.peer) { try { collab.peer.destroy() } catch {} }
+    collab.peer = null
+    collab.roomId = null
+    collab.isHost = false
+    collab.myColor = null
+    collab.peerCursors = {}
+    collab.connectedCount = 0
+    nextColorIdx = 0
+    destroyVoice()
+    // Clean room param from URL
+    const url = new URL(window.location)
+    url.searchParams.delete('room')
+    window.history.replaceState({}, '', url)
+  }
+
   return {
     collab,
     voice,
     PEER_COLORS,
     createRoom,
     joinRoom,
+    leaveRoom,
     broadcastMove,
     broadcastCursor,
     broadcastFullState,

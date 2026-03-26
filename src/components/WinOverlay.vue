@@ -10,7 +10,11 @@ const props = defineProps({
   time: String,
   mistakes: Number,
   ranking: Array,
+  isHost: Boolean,
+  isMultiplayer: Boolean,
 })
+
+const emit = defineEmits(['new-game'])
 
 const EMOJIS = ['🎉', '✨', '🌟', '🎊', '💫', '🏆', '⭐', '🥳']
 const particles = ref([])
@@ -93,6 +97,17 @@ onUnmounted(() => clearTimeout(cleanupTimer))
           <span v-if="player.errors" class="text-error tabular-nums">{{ player.errors }}&#10007;</span>
         </div>
       </div>
+
+      <!-- Play again button (solo always, multiplayer host only) -->
+      <button
+        v-if="!isMultiplayer || isHost"
+        class="mt-2 bg-accent/10 border border-accent/30 text-accent font-sans text-[0.7rem] font-bold
+               tracking-wide px-4 py-1.5 rounded-lg cursor-pointer transition-all duration-250
+               uppercase hover:bg-accent/20 hover:shadow-[0_0_12px_var(--accent-glow)]"
+        @click="emit('new-game')"
+      >
+        {{ t('playAgain') }}
+      </button>
     </div>
   </div>
 </template>
