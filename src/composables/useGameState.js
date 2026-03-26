@@ -13,11 +13,16 @@ function createEmptyNotes() {
   return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => new Set()))
 }
 
+function createEmptyOwners() {
+  return Array.from({ length: 9 }, () => Array(9).fill(null))
+}
+
 const state = reactive({
   solution: [],
   puzzle: [],
   board: [],
   notes: createEmptyNotes(),
+  cellOwners: createEmptyOwners(),
   selected: null,
   notesMode: false,
   difficulty: 'easy',
@@ -42,6 +47,7 @@ export function useGameState() {
     state.puzzle = puzzle
     state.board = puzzle.map((r) => [...r])
     state.notes = createEmptyNotes()
+    state.cellOwners = createEmptyOwners()
     state.selected = null
     state.mistakes = 0
     state.history = []
@@ -93,7 +99,7 @@ export function useGameState() {
     return cleaned
   }
 
-  function placeNumber(n, fromPeer = false) {
+  function placeNumber(n, fromPeer = false, color = null) {
     if (!state.selected || state.won) return
     const [r, c] = state.selected
     if (state.puzzle[r][c] !== 0) return
@@ -106,15 +112,17 @@ export function useGameState() {
     } else {
       const prev = state.board[r][c]
       const prevNotes = new Set(state.notes[r][c])
+      const prevOwner = state.cellOwners[r][c]
       state.board[r][c] = n
       state.notes[r][c].clear()
+      state.cellOwners[r][c] = color
       const cleaned = cleanNotesFor(r, c, n)
       if (!fromPeer) {
-        state.history.push({ type: 'place', r, c, prev, prevNotes, cleanedNotes: cleaned, cleanedNum: n })
+        state.history.push({ type: 'place', r, c, prev, prevNotes, prevOwner, cleanedNotes: cleaned, cleanedNum: n })
         if (n !== state.solution[r][c]) state.mistakes++
       }
       checkWin()
-      return { type: 'place', r, c, n }
+      return { type: 'place', r, c, n, color }
     }
   }
 
@@ -123,9 +131,10 @@ export function useGameState() {
     const [r, c] = state.selected
     if (state.puzzle[r][c] !== 0) return
     if (!fromPeer) {
-      state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevNotes: new Set(state.notes[r][c]) })
+      state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevOwner: state.cellOwners[r][c], prevNotes: new Set(state.notes[r][c]) })
     }
     state.board[r][c] = 0
+    state.cellOwners[r][c] = null
     state.notes[r][c].clear()
     return { type: 'erase', r, c }
   }
@@ -133,9 +142,10 @@ export function useGameState() {
   function eraseCellAt(r, c, fromPeer = false) {
     if (state.puzzle[r][c] !== 0) return
     if (!fromPeer) {
-      state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevNotes: new Set(state.notes[r][c]) })
+      state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevOwner: state.cellOwners[r][c], prevNotes: new Set(state.notes[r][c]) })
     }
     state.board[r][c] = 0
+    state.cellOwners[r][c] = null
     state.notes[r][c].clear()
   }
 
@@ -146,6 +156,7 @@ export function useGameState() {
       state.notes[a.r][a.c] = a.prev
     } else {
       state.board[a.r][a.c] = a.prev
+      state.cellOwners[a.r][a.c] = a.prevOwner || null
       if (a.prevNotes) state.notes[a.r][a.c] = a.prevNotes
       if (a.cleanedNotes && a.cleanedNum) {
         for (const { r, c } of a.cleanedNotes) state.notes[r][c].add(a.cleanedNum)
@@ -157,6 +168,7 @@ export function useGameState() {
     for (let r = 0; r < 9; r++)
       for (let c = 0; c < 9; c++) if (state.board[r][c] !== state.solution[r][c]) return
     state.won = true
+    state.selected = null
   }
 
   function select(r, c) {
@@ -186,6 +198,7 @@ export function useGameState() {
     state.puzzle = puzzle
     state.solution = solution
     state.board = data.board.map((r) => [...r])
+    state.cellOwners = data.cellOwners ? data.cellOwners.map((r) => [...r]) : createEmptyOwners()
     state.notes = createEmptyNotes()
     state.selected = null
     state.mistakes = 0
@@ -196,6 +209,7 @@ export function useGameState() {
   function applyPeerMove(move) {
     if (move.type === 'place') {
       state.board[move.r][move.c] = move.n
+      state.cellOwners[move.r][move.c] = move.color || null
       state.notes[move.r][move.c].clear()
       cleanNotesFor(move.r, move.c, move.n)
       checkWin()

@@ -42,6 +42,7 @@ const cells = computed(() => {
         r, c, value, isGiven, isSelected, isHighlighted, isError, isSameNumber,
         notes: props.state.notes[r][c],
         peerCursors: cursors,
+        ownerColor: props.state.cellOwners?.[r]?.[c] || null,
       })
     }
   }
@@ -67,6 +68,7 @@ const cells = computed(() => {
       :is-same-number="cell.isSameNumber"
       :notes="cell.notes"
       :peer-cursors="cell.peerCursors"
+      :owner-color="cell.ownerColor"
       @select="(r, c) => emit('select', r, c)"
     />
   </div>

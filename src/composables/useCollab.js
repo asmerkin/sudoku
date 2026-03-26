@@ -9,9 +9,12 @@ const collab = reactive({
   isHost: false,
   roomId: null,
   myColor: null,
+  myName: '',
   peerCursors: {},
   connectedCount: 0,
 })
+
+let nextColorIdx = 0
 
 export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange }) {
   function updateConnectedCount() {
@@ -28,11 +31,11 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   }
 
   function broadcastCursor(r, c) {
-    broadcast({ type: 'cursor', r, c, color: collab.myColor })
+    broadcast({ type: 'cursor', r, c, color: collab.myColor, name: collab.myName })
   }
 
-  function broadcastFullState(seed, difficulty, board) {
-    broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]) })
+  function broadcastFullState(seed, difficulty, board, cellOwners) {
+    broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]) })
   }
 
   function handlePeerData(peerId, data) {
@@ -45,34 +48,38 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     } else if (data.type === 'cursor') {
       // For relayed cursors, use the attributed peerId; otherwise the connection peer
       const sourcePeerId = data.peerId || peerId
-      const color =
-        data.color ||
-        collab.peerCursors[sourcePeerId]?.color ||
-        PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
-      collab.peerCursors[sourcePeerId] = { r: data.r, c: data.c, color }
+      const existing = collab.peerCursors[sourcePeerId]
+      const color = data.color || existing?.color || PEER_COLORS[0]
+      const name = data.name || existing?.name || ''
+      collab.peerCursors[sourcePeerId] = { r: data.r, c: data.c, color, name }
       onCursor?.()
       // Host relays guest cursors to all other guests
       if (collab.isHost) {
         collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) =>
-          c.send({ type: 'cursor', r: data.r, c: data.c, peerId: sourcePeerId, color })
+          c.send({ type: 'cursor', r: data.r, c: data.c, peerId: sourcePeerId, color, name })
         )
       }
     } else if (data.type === 'sync') {
       onSync?.(data)
     } else if (data.type === 'hello') {
       if (collab.isHost) {
-        // Assign a unique color to the new guest
-        const color = PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
-        collab.peerCursors[peerId] = { r: -1, c: -1, color }
-        sendToPeer(peerId, { type: 'your-color', color })
+        // Assign a unique color to the new guest using a dedicated counter
+        const color = PEER_COLORS[nextColorIdx % PEER_COLORS.length]
+        nextColorIdx++
+        collab.peerCursors[peerId] = { r: -1, c: -1, color, name: data.name || '' }
+        sendToPeer(peerId, { type: 'your-color', color, name: collab.myName })
       } else {
-        // Guest received hello from host — use the host's color
-        collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7' }
+        // Guest received hello from host
+        collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7', name: data.name || '' }
       }
       onHello?.(peerId)
       updateConnectedCount()
     } else if (data.type === 'your-color') {
       collab.myColor = data.color
+      // your-color always comes from the host, so peerId is the host
+      if (data.name && collab.peerCursors[peerId]) {
+        collab.peerCursors[peerId].name = data.name
+      }
     }
   }
 
@@ -80,7 +87,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.conns.push(conn)
     conn.on('data', (data) => handlePeerData(conn.peer, data))
     conn.on('open', () => {
-      conn.send({ type: 'hello', color: collab.myColor })
+      conn.send({ type: 'hello', color: collab.myColor, name: collab.myName })
       updateConnectedCount()
       onToast?.('Jugador conectado')
     })
@@ -101,6 +108,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.roomId = roomId
     collab.isHost = true
     collab.myColor = '#6ee7b7'
+    nextColorIdx = 0
     collab.peer = new Peer(roomId)
     collab.peer.on('open', (id) => {
       updateConnectedCount()
@@ -114,7 +122,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   function joinRoom(roomId) {
     collab.roomId = roomId
     collab.isHost = false
-    collab.myColor = PEER_COLORS[0]
+    collab.myColor = null // Don't set a default; wait for host assignment
     collab.peer = new Peer()
     return new Promise((resolve) => {
       collab.peer.on('open', () => {

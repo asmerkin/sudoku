@@ -10,6 +10,7 @@ const props = defineProps({
   isSameNumber: Boolean,
   notes: Set,
   peerCursors: Array,
+  ownerColor: String,
 })
 
 const emit = defineEmits(['select'])
@@ -22,12 +23,14 @@ const emit = defineEmits(['select'])
            relative"
     :class="{
       'text-given font-bold': isGiven,
-      'text-input font-semibold': !isGiven && value !== 0,
+      'text-input font-semibold': !isGiven && value !== 0 && !ownerColor,
+      'font-semibold': !isGiven && value !== 0 && ownerColor,
       'bg-accent-dim shadow-[inset_0_0_0_2px_var(--accent)] z-1': isSelected,
       'bg-highlight': isHighlighted && !isSelected,
       'bg-error-dim text-error!': isError,
       'bg-accent-glow': isSameNumber && !isSelected,
     }"
+    :style="ownerColor && !isGiven && !isError ? { color: ownerColor } : {}"
     @click="emit('select', row, col)"
   >
     <template v-if="isGiven || value !== 0">{{ value }}</template>

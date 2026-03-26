@@ -48,6 +48,7 @@ const {
         seed: state.seedDisplay,
         difficulty: state.difficulty,
         board: state.board.map((r) => [...r]),
+        cellOwners: state.cellOwners.map((r) => [...r]),
       })
     }
   },
@@ -73,7 +74,7 @@ function onNewGame() {
   const seed = encodeSeed(randomSeed(), state.difficulty)
   state.seedDisplay = seed
   startGame(seed)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
 }
 
 function onSeedSubmit(input) {
@@ -81,7 +82,7 @@ function onSeedSubmit(input) {
   const seed = parseSeedInput(input)
   state.seedDisplay = seed
   startGame(seed)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
 }
 
 function onDifficultyIdxUpdate(idx) {
@@ -91,7 +92,7 @@ function onDifficultyIdxUpdate(idx) {
 function onDifficultyChange() {
   updateSeedDisplay()
   startGame(state.seedDisplay)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
 }
 
 function onSelect(r, c) {
@@ -100,7 +101,7 @@ function onSelect(r, c) {
 }
 
 function onNumber(n) {
-  const move = placeNumber(n)
+  const move = placeNumber(n, false, collab.myColor)
   if (move) broadcastMove(move)
 }
 

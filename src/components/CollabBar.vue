@@ -9,6 +9,7 @@ const emit = defineEmits(['create-room', 'join-room', 'copy-room-id'])
 
 const showJoinInput = ref(false)
 const joinInput = ref('')
+const nameInput = ref('')
 
 const isConnected = computed(() => props.collab.conns.some((c) => c.open))
 const playerCount = computed(() => props.collab.conns.filter((c) => c.open).length + 1)
@@ -18,16 +19,25 @@ const peerBadges = computed(() => {
     .filter((c) => c.open)
     .map((conn, i) => ({
       id: conn.peer,
-      label: 'P' + (i + 2),
+      label: props.collab.peerCursors[conn.peer]?.name || 'P' + (i + 2),
       color: props.collab.peerCursors[conn.peer]?.color || '#f59e0b',
     }))
 })
 
+function onCreateRoom() {
+  props.collab.myName = nameInput.value.trim() || 'Anón'
+  emit('create-room')
+}
+
+function onJoinSubmit() {
+  if (!joinInput.value.trim()) return
+  props.collab.myName = nameInput.value.trim() || 'Anón'
+  emit('join-room', joinInput.value.trim())
+  showJoinInput.value = false
+}
+
 function onJoinKeydown(e) {
-  if (e.key === 'Enter' && joinInput.value.trim()) {
-    emit('join-room', joinInput.value.trim())
-    showJoinInput.value = false
-  }
+  if (e.key === 'Enter') onJoinSubmit()
 }
 </script>
 
@@ -38,11 +48,19 @@ function onJoinKeydown(e) {
     style="animation-delay: 0.02s"
   >
     <template v-if="!collab.roomId">
+      <input
+        v-model="nameInput"
+        class="bg-surface border border-border text-text font-sans text-[0.65rem]
+               py-0.5 px-2 rounded-md w-24 outline-none text-center
+               focus:border-accent focus:shadow-(--glow) transition-all duration-250"
+        placeholder="Nombre..."
+        maxlength="12"
+      />
       <button
         class="bg-surface border border-border text-text-dim font-sans text-[0.62rem] font-medium
                tracking-wide px-2.5 h-7.5 rounded-btn cursor-pointer transition-all duration-250
                uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)"
-        @click="emit('create-room')"
+        @click="onCreateRoom"
       >
         Crear sala
       </button>
@@ -91,6 +109,15 @@ function onJoinKeydown(e) {
           :class="isConnected ? 'bg-accent shadow-[0_0_6px_var(--accent)]' : 'bg-text-muted'"
         />
         <span>{{ playerCount }} conectado{{ playerCount !== 1 ? 's' : '' }}</span>
+      </span>
+
+      <!-- Own badge -->
+      <span
+        class="inline-flex items-center gap-1 font-mono text-[0.5rem]
+               py-0.5 px-1.5 rounded bg-surface border border-border"
+      >
+        <span class="w-1.5 h-1.5 rounded-full" :style="{ background: collab.myColor || '#6ee7b7' }" />
+        {{ collab.myName || 'Tú' }}
       </span>
 
       <!-- Peer badges -->
