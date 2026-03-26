@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import Peer from 'peerjs'
 import { useI18n } from './useI18n.js'
+import { useVoiceChat } from './useVoiceChat.js'
 
 const PEER_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -19,6 +20,7 @@ let nextColorIdx = 0
 
 export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange }) {
   const { t } = useI18n()
+  const { voice, initMic, callPeer, answerCall, setPTT, cleanupPeer, destroy: destroyVoice } = useVoiceChat()
   function updateConnectedCount() {
     collab.connectedCount = collab.conns.filter((c) => c.open).length
     onConnChange?.()
@@ -84,6 +86,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
         // Guest received hello from host
         collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7', name: data.name || '' }
       }
+      // Host initiates audio call to new guest
+      if (collab.isHost) callPeer(collab.peer, peerId)
       onHello?.(peerId)
       updateConnectedCount()
     } else if (data.type === 'your-color') {
@@ -103,6 +107,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
           existing.name = info.name
         } else {
           collab.peerCursors[id] = { r: -1, c: -1, color: info.color, name: info.name }
+          // Guest initiates audio call to new peers it discovers
+          callPeer(collab.peer, id)
         }
       }
       for (const id of Object.keys(collab.peerCursors)) {
@@ -124,6 +130,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     conn.on('close', () => {
       collab.conns = collab.conns.filter((c) => c !== conn)
       delete collab.peerCursors[conn.peer]
+      cleanupPeer(conn.peer)
       updateConnectedCount()
       if (collab.isHost) broadcastPeerList()
     })
@@ -146,7 +153,9 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       onToast?.(t('roomCreated', id))
     })
     collab.peer.on('connection', (conn) => setupConn(conn))
+    collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
     collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
+    initMic()
     return roomId
   }
 
@@ -162,12 +171,15 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
         updateConnectedCount()
         resolve()
       })
+      collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
       collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
+      initMic()
     })
   }
 
   return {
     collab,
+    voice,
     PEER_COLORS,
     createRoom,
     joinRoom,
@@ -175,5 +187,6 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcastCursor,
     broadcastFullState,
     sendToPeer,
+    setPTT,
   }
 }

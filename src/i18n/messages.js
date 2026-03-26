@@ -27,6 +27,8 @@ export const messages = {
     playerConnected: 'Jugador conectado',
     roomCreated: (id) => `Sala creada: ${id}`,
     viewOnGitHub: 'Ver en GitHub',
+    pushToTalk: 'Mantené para hablar',
+    micError: 'Micrófono no disponible',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -56,5 +58,7 @@ export const messages = {
     playerConnected: 'Player connected',
     roomCreated: (id) => `Room created: ${id}`,
     viewOnGitHub: 'View on GitHub',
+    pushToTalk: 'Hold to talk',
+    micError: 'Microphone unavailable',
   },
 }

@@ -31,12 +31,14 @@ const nameInput = ref('')
 
 const {
   collab,
+  voice,
   createRoom,
   joinRoom,
   broadcastMove,
   broadcastCursor,
   broadcastFullState,
   sendToPeer,
+  setPTT,
 } = useCollab({
   onMove(move) {
     applyPeerMove(move)
@@ -224,9 +226,14 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
 
     <CollabBar
       :collab="collab"
+      :mic-ready="voice.micReady"
+      :is-talking="voice.isTalking"
+      :mic-error="voice.micError"
       @create-room="onCreateRoom"
       @join-room="onJoinRoom"
       @copy-room-id="onCopyRoomId"
+      @ptt-start="setPTT(true)"
+      @ptt-end="setPTT(false)"
     />
 
     <GameControls
