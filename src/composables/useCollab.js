@@ -28,7 +28,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   }
 
   function broadcastCursor(r, c) {
-    broadcast({ type: 'cursor', r, c })
+    broadcast({ type: 'cursor', r, c, color: collab.myColor })
   }
 
   function broadcastFullState(seed, difficulty, board) {
@@ -38,29 +38,49 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   function handlePeerData(peerId, data) {
     if (data.type === 'move') {
       onMove?.(data.move)
+      // Host relays guest moves to all other guests
+      if (collab.isHost) {
+        collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) => c.send(data))
+      }
     } else if (data.type === 'cursor') {
+      // For relayed cursors, use the attributed peerId; otherwise the connection peer
+      const sourcePeerId = data.peerId || peerId
       const color =
-        collab.peerCursors[peerId]?.color ||
+        data.color ||
+        collab.peerCursors[sourcePeerId]?.color ||
         PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
-      collab.peerCursors[peerId] = { r: data.r, c: data.c, color }
+      collab.peerCursors[sourcePeerId] = { r: data.r, c: data.c, color }
       onCursor?.()
+      // Host relays guest cursors to all other guests
+      if (collab.isHost) {
+        collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) =>
+          c.send({ type: 'cursor', r: data.r, c: data.c, peerId: sourcePeerId, color })
+        )
+      }
     } else if (data.type === 'sync') {
       onSync?.(data)
     } else if (data.type === 'hello') {
-      const color = PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
-      collab.peerCursors[peerId] = { r: -1, c: -1, color }
+      if (collab.isHost) {
+        // Assign a unique color to the new guest
+        const color = PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
+        collab.peerCursors[peerId] = { r: -1, c: -1, color }
+        sendToPeer(peerId, { type: 'your-color', color })
+      } else {
+        // Guest received hello from host — use the host's color
+        collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7' }
+      }
       onHello?.(peerId)
       updateConnectedCount()
+    } else if (data.type === 'your-color') {
+      collab.myColor = data.color
     }
   }
 
   function setupConn(conn) {
     collab.conns.push(conn)
-    const color = PEER_COLORS[Object.keys(collab.peerCursors).length % PEER_COLORS.length]
-    collab.peerCursors[conn.peer] = { r: -1, c: -1, color }
     conn.on('data', (data) => handlePeerData(conn.peer, data))
     conn.on('open', () => {
-      conn.send({ type: 'hello' })
+      conn.send({ type: 'hello', color: collab.myColor })
       updateConnectedCount()
       onToast?.('Jugador conectado')
     })
