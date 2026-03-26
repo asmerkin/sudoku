@@ -101,7 +101,6 @@ export function generatePuzzle(seed, removals) {
 // ── Seed encoding ──
 export const DIFFICULTY = { easy: 38, medium: 46, hard: 54, expert: 60 }
 export const DIFF_KEYS = ['easy', 'medium', 'hard', 'expert']
-export const DIFF_LABELS = ['Fácil', 'Medio', 'Difícil', 'Muy difícil']
 export const DIFF_SUFFIXES = { easy: 'F', medium: 'M', hard: 'D', expert: 'X' }
 const SUFFIX_TO_DIFF = { F: 'easy', M: 'medium', D: 'hard', X: 'expert' }
 const SUFFIX_TO_IDX = { F: 0, M: 1, D: 2, X: 3 }

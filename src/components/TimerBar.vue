@@ -1,8 +1,12 @@
 <script setup>
+import { useI18n } from '../composables/useI18n.js'
+
 defineProps({
   mistakes: Number,
   time: String,
 })
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -11,7 +15,7 @@ defineProps({
            mb-2.5 text-[0.68rem] text-text-muted font-mono animate-fade-up"
     style="animation-delay: 0.08s"
   >
-    <span>Errores: {{ mistakes }}</span>
+    <span>{{ t('mistakes', mistakes) }}</span>
     <span class="text-[0.82rem] font-semibold text-text-dim tracking-wide">{{ time }}</span>
   </div>
 </template>

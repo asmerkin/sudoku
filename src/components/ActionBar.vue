@@ -1,9 +1,12 @@
 <script setup>
+import { useI18n } from '../composables/useI18n.js'
+
 defineProps({
   notesMode: Boolean,
 })
 
 const emit = defineEmits(['toggle-notes', 'erase', 'undo'])
+const { t } = useI18n()
 </script>
 
 <template>
@@ -21,7 +24,7 @@ const emit = defineEmits(['toggle-notes', 'erase', 'undo'])
         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
         <path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
       </svg>
-      Notas
+      {{ t('notes') }}
       <span class="font-mono text-[0.45rem] bg-surface border border-border text-text-muted
                     py-px px-1 rounded-sm ml-0.5 tracking-normal normal-case leading-snug">N</span>
     </button>
@@ -34,7 +37,7 @@ const emit = defineEmits(['toggle-notes', 'erase', 'undo'])
         <line x1="18" y1="9" x2="12" y2="15" />
         <line x1="12" y1="9" x2="18" y2="15" />
       </svg>
-      Borrar
+      {{ t('erase') }}
       <span class="font-mono text-[0.45rem] bg-surface border border-border text-text-muted
                     py-px px-1 rounded-sm ml-0.5 tracking-normal normal-case leading-snug">Del</span>
     </button>
@@ -46,7 +49,7 @@ const emit = defineEmits(['toggle-notes', 'erase', 'undo'])
         <polyline points="1 4 1 10 7 10" />
         <path d="M3.51 15a9 9 0 105.64-10.36L1 10" />
       </svg>
-      Undo
+      {{ t('undo') }}
       <span class="font-mono text-[0.45rem] bg-surface border border-border text-text-muted
                     py-px px-1 rounded-sm ml-0.5 tracking-normal normal-case leading-snug">⌘Z</span>
     </button>

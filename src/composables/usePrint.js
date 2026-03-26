@@ -1,8 +1,9 @@
 import { generatePuzzle, hashSeed, DIFFICULTY } from './useSudokuEngine.js'
-
-const PRINT_DIFF_LABEL = { easy: 'Fácil', medium: 'Medio', hard: 'Difícil', expert: 'Muy Difícil' }
+import { useI18n } from './useI18n.js'
 
 export function usePrint() {
+  const { t } = useI18n()
+
   function printSudokus(seedValue, difficulty) {
     const numericBase = hashSeed(seedValue)
     let container = document.getElementById('printContainer')
@@ -14,7 +15,7 @@ export function usePrint() {
     }
 
     let html = '<div class="print-page">'
-    html += `<div class="print-header">Sudoku — ${PRINT_DIFF_LABEL[difficulty]} — Seed: ${seedValue}</div>`
+    html += `<div class="print-header">Sudoku — ${t('printDiffLabels')[difficulty]} — Seed: ${seedValue}</div>`
 
     for (let i = 0; i < 6; i++) {
       const { puzzle } = generatePuzzle(numericBase + i, DIFFICULTY[difficulty])
@@ -32,7 +33,7 @@ export function usePrint() {
     }
 
     html += '</div><div class="print-page">'
-    html += '<div class="print-header">Soluciones</div>'
+    html += `<div class="print-header">${t('solutions')}</div>`
 
     for (let i = 0; i < 6; i++) {
       const { solution } = generatePuzzle(numericBase + i, DIFFICULTY[difficulty])

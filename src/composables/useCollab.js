@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import Peer from 'peerjs'
+import { useI18n } from './useI18n.js'
 
 const PEER_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -17,6 +18,7 @@ const collab = reactive({
 let nextColorIdx = 0
 
 export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange }) {
+  const { t } = useI18n()
   function updateConnectedCount() {
     collab.connectedCount = collab.conns.filter((c) => c.open).length
     onConnChange?.()
@@ -117,7 +119,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     conn.on('open', () => {
       conn.send({ type: 'hello', color: collab.myColor, name: collab.myName })
       updateConnectedCount()
-      onToast?.('Jugador conectado')
+      onToast?.(t('playerConnected'))
     })
     conn.on('close', () => {
       collab.conns = collab.conns.filter((c) => c !== conn)
@@ -141,7 +143,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.peer = new Peer(roomId)
     collab.peer.on('open', (id) => {
       updateConnectedCount()
-      onToast?.('Sala creada: ' + id)
+      onToast?.(t('roomCreated', id))
     })
     collab.peer.on('connection', (conn) => setupConn(conn))
     collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))

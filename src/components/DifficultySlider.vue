@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { DIFF_LABELS } from '../composables/useSudokuEngine.js'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: { type: Number, default: 0 },
@@ -103,7 +105,7 @@ onUnmounted(() => {
     <!-- Labels -->
     <div class="flex justify-between w-50 px-0.5">
       <span
-        v-for="(label, i) in DIFF_LABELS"
+        v-for="(label, i) in t('diffLabels')"
         :key="i"
         class="font-mono text-[0.5rem] uppercase tracking-wide transition-colors duration-300 w-12.5 text-center"
         :class="i === currentIdx ? 'text-accent font-semibold' : 'text-text-muted'"

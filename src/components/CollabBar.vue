@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   collab: Object,
@@ -49,7 +52,7 @@ function onJoinKeydown(e) {
                uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)"
         @click="onCreateRoom"
       >
-        Crear sala
+        {{ t('createRoom') }}
       </button>
       <template v-if="!showJoinInput">
         <button
@@ -58,7 +61,7 @@ function onJoinKeydown(e) {
                  uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)"
           @click="showJoinInput = true"
         >
-          Unirse
+          {{ t('join') }}
         </button>
       </template>
       <input
@@ -86,7 +89,7 @@ function onJoinKeydown(e) {
           <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
           <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
         </svg>
-        Copiar link
+        {{ t('copyLink') }}
       </button>
 
       <!-- Connected count -->
@@ -95,7 +98,7 @@ function onJoinKeydown(e) {
           class="w-1.5 h-1.5 rounded-full"
           :class="isConnected ? 'bg-accent shadow-[0_0_6px_var(--accent)]' : 'bg-text-muted'"
         />
-        <span>{{ playerCount }} conectado{{ playerCount !== 1 ? 's' : '' }}</span>
+        <span>{{ t('connected', playerCount) }}</span>
       </span>
 
       <!-- Own badge -->
@@ -104,7 +107,7 @@ function onJoinKeydown(e) {
                py-0.5 px-1.5 rounded bg-surface border border-border"
       >
         <span class="w-1.5 h-1.5 rounded-full" :style="{ background: collab.myColor || '#6ee7b7' }" />
-        {{ collab.myName || 'Tú' }}
+        {{ collab.myName || t('you') }}
       </span>
 
       <!-- Peer badges -->

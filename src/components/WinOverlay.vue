@@ -1,5 +1,8 @@
 <script setup>
 import { ref, watch, onUnmounted } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   show: Boolean,
@@ -70,10 +73,9 @@ onUnmounted(() => clearTimeout(cleanupTimer))
       class="bg-surface border border-accent/30 rounded-lg px-4 py-2.5 text-center
              shadow-[0_0_20px_var(--accent-glow)]"
     >
-      <p class="font-bold text-accent text-sm tracking-tight">🎉 Completado! 🎉</p>
+      <p class="font-bold text-accent text-sm tracking-tight">{{ t('completed') }}</p>
       <p class="text-text-dim font-mono text-[0.65rem] mt-0.5">
-        Seed: {{ seed }} · {{ time }} · {{ mistakes }}
-        error{{ mistakes !== 1 ? 'es' : '' }}
+        Seed: {{ seed }} · {{ time }} · {{ t('errors', mistakes) }}
       </p>
 
       <!-- Multiplayer ranking -->

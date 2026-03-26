@@ -6,8 +6,10 @@ import { useTimer } from './composables/useTimer.js'
 import { useToast } from './composables/useToast.js'
 import { useCollab } from './composables/useCollab.js'
 import { usePrint } from './composables/usePrint.js'
+import { useI18n } from './composables/useI18n.js'
 
 import ThemeToggle from './components/ThemeToggle.vue'
+import LangToggle from './components/LangToggle.vue'
 import CollabBar from './components/CollabBar.vue'
 import GameControls from './components/GameControls.vue'
 import TimerBar from './components/TimerBar.vue'
@@ -21,6 +23,7 @@ const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumb
 const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
+const { t } = useI18n()
 
 const showWin = ref(false)
 const pendingAction = ref(null)
@@ -41,7 +44,7 @@ const {
   onSync(data) {
     applyPeerSync(data)
     timer.start(data.timerStart)
-    toast.show('Sincronizado con host')
+    toast.show(t('syncedWithHost'))
   },
   onHello(peerId) {
     if (collab.isHost) {
@@ -72,7 +75,7 @@ const playerRanking = computed(() => {
   }
 
   const colorToName = {}
-  if (collab.myColor) colorToName[collab.myColor] = collab.myName || 'Tú'
+  if (collab.myColor) colorToName[collab.myColor] = collab.myName || t('you')
   for (const data of Object.values(collab.peerCursors)) {
     if (data.color) colorToName[data.color] = data.name || 'P'
   }
@@ -155,11 +158,11 @@ function onCreateRoom() { pendingAction.value = { type: 'create' } }
 function onJoinRoom(roomId) { pendingAction.value = { type: 'join', roomId } }
 function onCopyRoomId(roomId) {
   const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
-  navigator.clipboard.writeText(url).then(() => toast.show('Link copiado'))
+  navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
 }
 
 function confirmName() {
-  const name = nameInput.value.trim() || 'Anón'
+  const name = nameInput.value.trim() || t('anon')
   collab.myName = name
   const action = pendingAction.value
   pendingAction.value = null
@@ -200,6 +203,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       <p class="font-mono text-[0.55rem] text-text-muted tracking-[0.22em] uppercase mt-1">
         seeded puzzle generator
       </p>
+      <LangToggle />
       <ThemeToggle />
     </header>
 
@@ -261,17 +265,17 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       <div v-if="pendingAction" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="bg-surface border border-border rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl w-80 animate-fade-up">
           <h2 class="text-xl font-bold text-text tracking-tight">
-            {{ pendingAction.type === 'create' ? 'Crear sala' : 'Unirse a partida' }}
+            {{ pendingAction.type === 'create' ? t('createRoom') : t('joinGame') }}
           </h2>
           <p class="text-text-muted text-xs text-center font-mono">
-            Ingresá tu nombre para que los demás te vean
+            {{ t('enterNamePrompt') }}
           </p>
           <input
             v-model="nameInput"
             class="bg-bg border border-border text-text font-sans text-base
                    py-2.5 px-4 rounded-lg w-full outline-none text-center
                    focus:border-accent focus:shadow-(--glow) transition-all duration-250"
-            placeholder="Tu nombre..."
+            :placeholder="t('namePlaceholder')"
             maxlength="12"
             autofocus
             @keydown.enter="confirmName"
@@ -282,7 +286,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
                    uppercase hover:brightness-110 w-full"
             @click="confirmName"
           >
-            {{ pendingAction.type === 'create' ? 'Crear' : 'Entrar' }}
+            {{ pendingAction.type === 'create' ? t('create') : t('enter') }}
           </button>
         </div>
       </div>

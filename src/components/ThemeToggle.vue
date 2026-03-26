@@ -1,7 +1,9 @@
 <script setup>
 import { useTheme } from '../composables/useTheme.js'
+import { useI18n } from '../composables/useI18n.js'
 
 const { theme, toggleTheme } = useTheme()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -10,7 +12,7 @@ const { theme, toggleTheme } = useTheme()
            rounded-full cursor-pointer flex items-center justify-center
            leading-none transition-all duration-250
            hover:bg-surface-hover hover:text-accent hover:border-accent hover:shadow-(--glow)"
-    title="Cambiar tema"
+    :title="t('toggleTheme')"
     @click="toggleTheme"
   >
     {{ theme === 'dark' ? '☀' : '☾' }}

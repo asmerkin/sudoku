@@ -1,5 +1,8 @@
 <script setup>
 import DifficultySlider from './DifficultySlider.vue'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t } = useI18n()
 
 defineProps({
   seedDisplay: String,
@@ -60,7 +63,7 @@ function onSeedKeydown(e) {
              uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)"
       @click="emit('new-game')"
     >
-      Nuevo
+      {{ t('new') }}
     </button>
     <button
       class="bg-surface border border-border text-text-dim font-sans text-[0.68rem] font-medium
