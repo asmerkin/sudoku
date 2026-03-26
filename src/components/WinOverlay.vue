@@ -6,6 +6,7 @@ const props = defineProps({
   seed: String,
   time: String,
   mistakes: Number,
+  ranking: Array,
 })
 
 const EMOJIS = ['🎉', '✨', '🌟', '🎊', '💫', '🏆', '⭐', '🥳']
@@ -63,7 +64,7 @@ onUnmounted(() => clearTimeout(cleanupTimer))
   <!-- Stats banner -->
   <div
     class="overflow-hidden transition-all duration-500 ease-out"
-    :class="show ? 'max-h-24 opacity-100 mb-3.5' : 'max-h-0 opacity-0'"
+    :class="show ? 'max-h-96 opacity-100 mb-3.5' : 'max-h-0 opacity-0'"
   >
     <div
       class="bg-surface border border-accent/30 rounded-lg px-4 py-2.5 text-center
@@ -74,6 +75,22 @@ onUnmounted(() => clearTimeout(cleanupTimer))
         Seed: {{ seed }} · {{ time }} · {{ mistakes }}
         error{{ mistakes !== 1 ? 'es' : '' }}
       </p>
+
+      <!-- Multiplayer ranking -->
+      <div v-if="ranking && ranking.length" class="mt-2 space-y-0.5">
+        <div
+          v-for="(player, i) in ranking"
+          :key="player.color"
+          class="flex items-center gap-2 py-1 px-3 rounded text-[0.65rem] font-mono"
+          :class="i === 0 ? 'bg-accent-glow' : ''"
+        >
+          <span class="font-bold text-text-dim w-3 text-right">{{ i + 1 }}</span>
+          <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: player.color }" />
+          <span class="text-text flex-1 truncate">{{ player.name }}</span>
+          <span class="text-accent tabular-nums">{{ player.correct }}&#10003;</span>
+          <span v-if="player.errors" class="text-error tabular-nums">{{ player.errors }}&#10007;</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>

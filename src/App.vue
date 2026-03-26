@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { encodeSeed, randomSeed } from './composables/useSudokuEngine.js'
 import { useGameState } from './composables/useGameState.js'
 import { useTimer } from './composables/useTimer.js'
@@ -58,6 +58,41 @@ const {
   onCursor() {},
   onToast(msg, ms) { toast.show(msg, ms) },
   onConnChange() {},
+})
+
+const playerRanking = computed(() => {
+  if (!showWin.value || !collab.roomId) return []
+
+  const correctCounts = {}
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const owner = state.cellOwners[r]?.[c]
+      if (owner) correctCounts[owner] = (correctCounts[owner] || 0) + 1
+    }
+  }
+
+  const colorToName = {}
+  if (collab.myColor) colorToName[collab.myColor] = collab.myName || 'Tú'
+  for (const data of Object.values(collab.peerCursors)) {
+    if (data.color) colorToName[data.color] = data.name || 'P'
+  }
+
+  const allColors = new Set([
+    ...Object.keys(correctCounts),
+    ...Object.keys(state.playerErrors || {}),
+  ])
+
+  const stats = []
+  for (const color of allColors) {
+    stats.push({
+      color,
+      name: colorToName[color] || '?',
+      correct: correctCounts[color] || 0,
+      errors: state.playerErrors[color] || 0,
+    })
+  }
+
+  return stats.sort((a, b) => b.correct - a.correct || a.errors - b.errors)
 })
 
 watch(() => state.won, (won) => {
@@ -207,6 +242,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       :seed="state.seed"
       :time="timer.display.value"
       :mistakes="state.mistakes"
+      :ranking="playerRanking"
     />
 
     <NumPad :board="state.board" @number="onNumber" />

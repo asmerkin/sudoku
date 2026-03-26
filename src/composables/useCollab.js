@@ -136,8 +136,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     const roomId = 'sdk-' + Math.random().toString(36).substr(2, 6)
     collab.roomId = roomId
     collab.isHost = true
-    collab.myColor = '#6ee7b7'
-    nextColorIdx = 0
+    collab.myColor = PEER_COLORS[0]
+    nextColorIdx = 1
     collab.peer = new Peer(roomId)
     collab.peer.on('open', (id) => {
       updateConnectedCount()

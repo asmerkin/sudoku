@@ -28,6 +28,7 @@ const state = reactive({
   difficulty: 'easy',
   difficultyIdx: 0,
   mistakes: 0,
+  playerErrors: {},
   history: [],
   won: false,
   seed: '',
@@ -50,6 +51,7 @@ export function useGameState() {
     state.cellOwners = createEmptyOwners()
     state.selected = null
     state.mistakes = 0
+    state.playerErrors = {}
     state.history = []
     state.won = false
   }
@@ -103,6 +105,7 @@ export function useGameState() {
     if (!state.selected || state.won) return
     const [r, c] = state.selected
     if (state.puzzle[r][c] !== 0) return
+    if (state.board[r][c] !== 0 && state.board[r][c] === state.solution[r][c]) return
 
     if (state.notesMode && !fromPeer) {
       state.history.push({ type: 'note', r, c, prev: new Set(state.notes[r][c]) })
@@ -119,7 +122,10 @@ export function useGameState() {
       const cleaned = cleanNotesFor(r, c, n)
       if (!fromPeer) {
         state.history.push({ type: 'place', r, c, prev, prevNotes, prevOwner, cleanedNotes: cleaned, cleanedNum: n })
-        if (n !== state.solution[r][c]) state.mistakes++
+        if (n !== state.solution[r][c]) {
+          state.mistakes++
+          if (color) state.playerErrors[color] = (state.playerErrors[color] || 0) + 1
+        }
       }
       checkWin()
       return { type: 'place', r, c, n, color }
@@ -130,6 +136,7 @@ export function useGameState() {
     if (!state.selected || state.won) return
     const [r, c] = state.selected
     if (state.puzzle[r][c] !== 0) return
+    if (state.board[r][c] !== 0 && state.board[r][c] === state.solution[r][c]) return
     if (!fromPeer) {
       state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevOwner: state.cellOwners[r][c], prevNotes: new Set(state.notes[r][c]) })
     }
@@ -141,6 +148,7 @@ export function useGameState() {
 
   function eraseCellAt(r, c, fromPeer = false) {
     if (state.puzzle[r][c] !== 0) return
+    if (state.board[r][c] !== 0 && state.board[r][c] === state.solution[r][c]) return
     if (!fromPeer) {
       state.history.push({ type: 'erase', r, c, prev: state.board[r][c], prevOwner: state.cellOwners[r][c], prevNotes: new Set(state.notes[r][c]) })
     }
@@ -202,16 +210,21 @@ export function useGameState() {
     state.notes = createEmptyNotes()
     state.selected = null
     state.mistakes = 0
+    state.playerErrors = {}
     state.history = []
     state.won = false
   }
 
   function applyPeerMove(move) {
     if (move.type === 'place') {
+      if (state.board[move.r][move.c] !== 0 && state.board[move.r][move.c] === state.solution[move.r][move.c]) return
       state.board[move.r][move.c] = move.n
       state.cellOwners[move.r][move.c] = move.color || null
       state.notes[move.r][move.c].clear()
       cleanNotesFor(move.r, move.c, move.n)
+      if (move.n !== state.solution[move.r][move.c] && move.color) {
+        state.playerErrors[move.color] = (state.playerErrors[move.color] || 0) + 1
+      }
       checkWin()
     } else if (move.type === 'erase') {
       eraseCellAt(move.r, move.c, true)
