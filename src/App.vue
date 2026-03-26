@@ -23,6 +23,8 @@ const toast = useToast()
 const { printSudokus } = usePrint()
 
 const showWin = ref(false)
+const pendingRoomId = ref(null)
+const joinNameInput = ref('')
 
 const {
   collab,
@@ -38,7 +40,7 @@ const {
   },
   onSync(data) {
     applyPeerSync(data)
-    timer.start()
+    timer.start(data.timerStart)
     toast.show('Sincronizado con host')
   },
   onHello(peerId) {
@@ -49,6 +51,7 @@ const {
         difficulty: state.difficulty,
         board: state.board.map((r) => [...r]),
         cellOwners: state.cellOwners.map((r) => [...r]),
+        timerStart: timer.getStartTime(),
       })
     }
   },
@@ -74,7 +77,7 @@ function onNewGame() {
   const seed = encodeSeed(randomSeed(), state.difficulty)
   state.seedDisplay = seed
   startGame(seed)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
 }
 
 function onSeedSubmit(input) {
@@ -82,7 +85,7 @@ function onSeedSubmit(input) {
   const seed = parseSeedInput(input)
   state.seedDisplay = seed
   startGame(seed)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
 }
 
 function onDifficultyIdxUpdate(idx) {
@@ -92,7 +95,7 @@ function onDifficultyIdxUpdate(idx) {
 function onDifficultyChange() {
   updateSeedDisplay()
   startGame(state.seedDisplay)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners)
+  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
 }
 
 function onSelect(r, c) {
@@ -120,9 +123,17 @@ function onCopyRoomId(roomId) {
   navigator.clipboard.writeText(url).then(() => toast.show('Link copiado'))
 }
 
+function confirmJoinName() {
+  const name = joinNameInput.value.trim() || 'Anón'
+  collab.myName = name
+  const roomId = pendingRoomId.value
+  pendingRoomId.value = null
+  joinRoom(roomId)
+}
+
 onMounted(() => {
   const urlRoom = new URLSearchParams(window.location.search).get('room')
-  if (urlRoom) setTimeout(() => joinRoom(urlRoom), 500)
+  if (urlRoom) pendingRoomId.value = urlRoom
 })
 
 function onKeydown(e) {
@@ -200,5 +211,37 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
     />
 
     <AppToast />
+
+    <!-- Name modal for URL-based join -->
+    <Teleport to="body">
+      <div v-if="pendingRoomId" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="bg-surface border border-border rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl w-80 animate-fade-up">
+          <h2 class="text-xl font-bold text-text tracking-tight">
+            Unirse a partida
+          </h2>
+          <p class="text-text-muted text-xs text-center font-mono">
+            Ingresá tu nombre para que los demás te vean
+          </p>
+          <input
+            v-model="joinNameInput"
+            class="bg-bg border border-border text-text font-sans text-base
+                   py-2.5 px-4 rounded-lg w-full outline-none text-center
+                   focus:border-accent focus:shadow-(--glow) transition-all duration-250"
+            placeholder="Tu nombre..."
+            maxlength="12"
+            autofocus
+            @keydown.enter="confirmJoinName"
+          />
+          <button
+            class="bg-accent text-bg font-sans text-sm font-bold
+                   tracking-wide px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-250
+                   uppercase hover:brightness-110 w-full"
+            @click="confirmJoinName"
+          >
+            Entrar
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

@@ -34,8 +34,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'cursor', r, c, color: collab.myColor, name: collab.myName })
   }
 
-  function broadcastFullState(seed, difficulty, board, cellOwners) {
-    broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]) })
+  function broadcastFullState(seed, difficulty, board, cellOwners, timerStart) {
+    broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
   }
 
   function handlePeerData(peerId, data) {

@@ -11,11 +11,15 @@ export function useTimer() {
     display.value = `${String(Math.floor(e / 60)).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`
   }
 
-  function start() {
+  function start(ts) {
     stop()
-    startTime = Date.now()
-    display.value = '00:00'
+    startTime = ts || Date.now()
+    update()
     interval = setInterval(update, 1000)
+  }
+
+  function getStartTime() {
+    return startTime
   }
 
   function stop() {
@@ -27,5 +31,5 @@ export function useTimer() {
 
   onUnmounted(stop)
 
-  return { display, start, stop }
+  return { display, start, stop, getStartTime }
 }
