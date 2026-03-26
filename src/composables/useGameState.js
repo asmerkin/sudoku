@@ -195,7 +195,6 @@ export function useGameState() {
 
   function applyPeerMove(move) {
     if (move.type === 'place') {
-      state.selected = [move.r, move.c]
       state.board[move.r][move.c] = move.n
       state.notes[move.r][move.c].clear()
       cleanNotesFor(move.r, move.c, move.n)
