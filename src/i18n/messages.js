@@ -26,6 +26,7 @@ export const messages = {
     solutions: 'Soluciones',
     playerConnected: 'Jugador conectado',
     roomCreated: (id) => `Sala creada: ${id}`,
+    viewOnGitHub: 'Ver en GitHub',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -54,5 +55,6 @@ export const messages = {
     solutions: 'Solutions',
     playerConnected: 'Player connected',
     roomCreated: (id) => `Room created: ${id}`,
+    viewOnGitHub: 'View on GitHub',
   },
 }
