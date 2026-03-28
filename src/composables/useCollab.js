@@ -3,7 +3,7 @@ import Peer from 'peerjs'
 import { useI18n } from './useI18n.js'
 import { useVoiceChat } from './useVoiceChat.js'
 
-const PEER_COLORS = ['#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+const PEER_COLORS = ['#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#14b8a6']
 
 const collab = reactive({
   peer: null,
