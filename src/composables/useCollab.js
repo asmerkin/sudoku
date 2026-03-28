@@ -18,7 +18,7 @@ const collab = reactive({
 
 let nextColorIdx = 0
 
-export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange }) {
+export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange, onNewGameRequest }) {
   const { t } = useI18n()
   const { voice, initMic, callPeer, answerCall, setPTT, cleanupPeer, destroy: destroyVoice } = useVoiceChat()
   function updateConnectedCount() {
@@ -117,6 +117,11 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
           delete collab.peerCursors[id]
         }
       }
+    } else if (data.type === 'new-game-request') {
+      // Guest is asking the host to start a new game
+      if (collab.isHost) onNewGameRequest?.()
+    } else if (data.type === 'new-game') {
+      // Host is telling all guests a new game is starting (via sync)
     }
   }
 
@@ -140,6 +145,10 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   function sendToPeer(peerId, data) {
     const conn = collab.conns.find((c) => c.peer === peerId)
     if (conn && conn.open) conn.send(data)
+  }
+
+  function requestNewGame() {
+    broadcast({ type: 'new-game-request' })
   }
 
   function createRoom() {
@@ -207,6 +216,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcastCursor,
     broadcastFullState,
     sendToPeer,
+    requestNewGame,
     setPTT,
   }
 }

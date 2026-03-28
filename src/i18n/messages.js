@@ -32,6 +32,7 @@ export const messages = {
     leaveRoom: 'Salir',
     newGame: 'Nueva partida',
     playAgain: 'Jugar de nuevo',
+    waitingNewGame: 'Esperando nueva partida…',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -66,5 +67,6 @@ export const messages = {
     leaveRoom: 'Leave',
     newGame: 'New game',
     playAgain: 'Play again',
+    waitingNewGame: 'Waiting for new game…',
   },
 }

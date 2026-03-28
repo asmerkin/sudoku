@@ -41,6 +41,7 @@ const {
   broadcastCursor,
   broadcastFullState,
   sendToPeer,
+  requestNewGame,
   setPTT,
 } = useCollab({
   onMove(move) {
@@ -66,6 +67,7 @@ const {
   onCursor() {},
   onToast(msg, ms) { toast.show(msg, ms) },
   onConnChange() {},
+  onNewGameRequest() { onNewGame() },
 })
 
 const playerRanking = computed(() => {
@@ -277,6 +279,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       :is-host="collab.isHost"
       :is-multiplayer="!!collab.roomId"
       @new-game="onNewGame"
+      @request-new-game="requestNewGame"
     />
 
     <NumPad :board="state.board" @number="onNumber" />
