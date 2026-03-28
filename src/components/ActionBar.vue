@@ -62,7 +62,7 @@ const { t } = useI18n()
 .btn {
   @apply bg-surface border border-border text-text-dim font-sans text-[0.68rem]
          font-medium tracking-wide px-3.5 h-8.5 rounded-btn cursor-pointer
-         transition-all duration-250 uppercase;
+         transition-all duration-250 uppercase outline-none;
 }
 .btn:hover {
   @apply border-accent text-accent bg-accent-glow shadow-(--glow);
@@ -71,6 +71,6 @@ const { t } = useI18n()
   @apply border-accent! text-accent! bg-accent-dim! shadow-(--glow)!;
 }
 .btn-notes-active:hover {
-  @apply bg-accent-dim!;
+  @apply border-accent! text-accent! bg-accent-dim! shadow-(--glow)!;
 }
 </style>
