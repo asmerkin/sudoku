@@ -17,7 +17,7 @@ const { t } = useI18n()
   >
     <button
       class="btn flex-1 min-w-17.5 flex items-center justify-center gap-1.5 relative"
-      :class="{ 'border-accent! text-accent! bg-accent-dim!': notesMode }"
+      :class="notesMode ? 'btn-notes-active' : ''"
       @click="emit('toggle-notes')"
     >
       <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -66,5 +66,11 @@ const { t } = useI18n()
 }
 .btn:hover {
   @apply border-accent text-accent bg-accent-glow shadow-(--glow);
+}
+.btn-notes-active {
+  @apply border-accent! text-accent! bg-accent-dim! shadow-(--glow)!;
+}
+.btn-notes-active:hover {
+  @apply bg-accent-dim!;
 }
 </style>

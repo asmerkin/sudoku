@@ -76,8 +76,9 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       onSync?.(data)
     } else if (data.type === 'hello') {
       if (collab.isHost) {
-        // Assign a unique color to the new guest using a dedicated counter
-        const color = PEER_COLORS[nextColorIdx % PEER_COLORS.length]
+        // Assign a color not currently in use by any connected peer
+        const usedColors = new Set([collab.myColor, ...Object.values(collab.peerCursors).map(p => p.color)])
+        const color = PEER_COLORS.find(c => !usedColors.has(c)) || PEER_COLORS[nextColorIdx % PEER_COLORS.length]
         nextColorIdx++
         collab.peerCursors[peerId] = { r: -1, c: -1, color, name: data.name || '' }
         sendToPeer(peerId, { type: 'your-color', color, name: collab.myName })
