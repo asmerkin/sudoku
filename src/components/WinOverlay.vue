@@ -14,15 +14,16 @@ const props = defineProps({
   isMultiplayer: Boolean,
 })
 
-const emit = defineEmits(['new-game'])
+const emit = defineEmits(['new-game', 'request-new-game'])
 
 const EMOJIS = ['🎉', '✨', '🌟', '🎊', '💫', '🏆', '⭐', '🥳']
 const particles = ref([])
+const requested = ref(false)
 let cleanupTimer = null
 
 watch(() => props.show, (val) => {
   if (val) spawnConfetti()
-  else particles.value = []
+  else { particles.value = []; requested.value = false }
 })
 
 function spawnConfetti() {
@@ -98,7 +99,7 @@ onUnmounted(() => clearTimeout(cleanupTimer))
         </div>
       </div>
 
-      <!-- Play again button (solo always, multiplayer host only) -->
+      <!-- Play again button -->
       <button
         v-if="!isMultiplayer || isHost"
         class="mt-2 bg-accent/10 border border-accent/30 text-accent font-sans text-[0.7rem] font-bold
@@ -108,6 +109,22 @@ onUnmounted(() => clearTimeout(cleanupTimer))
       >
         {{ t('playAgain') }}
       </button>
+      <!-- Guest: request new game from host -->
+      <button
+        v-if="isMultiplayer && !isHost && !requested"
+        class="mt-2 bg-accent/10 border border-accent/30 text-accent font-sans text-[0.7rem] font-bold
+               tracking-wide px-4 py-1.5 rounded-lg cursor-pointer transition-all duration-250
+               uppercase hover:bg-accent/20 hover:shadow-[0_0_12px_var(--accent-glow)]"
+        @click="requested = true; emit('request-new-game')"
+      >
+        {{ t('playAgain') }}
+      </button>
+      <p
+        v-if="isMultiplayer && !isHost && requested"
+        class="mt-2 text-text-dim text-[0.65rem] font-mono"
+      >
+        {{ t('waitingNewGame') }}
+      </p>
     </div>
   </div>
 </template>
