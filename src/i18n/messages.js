@@ -41,6 +41,11 @@ export const messages = {
     waitingForHost: 'Esperando al host…',
     startGame: 'Iniciar partida',
     gameStarted: 'Partida iniciada',
+    modeBattle: 'Batalla',
+    modeRace: 'Carrera',
+    raceFinished: '¡Terminó!',
+    raceWinner: '¡Ganador!',
+    raceSolving: 'Resolviendo...',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -84,5 +89,10 @@ export const messages = {
     waitingForHost: 'Waiting for host…',
     startGame: 'Start game',
     gameStarted: 'Game started',
+    modeBattle: 'Battle',
+    modeRace: 'Race',
+    raceFinished: 'Finished!',
+    raceWinner: 'Winner!',
+    raceSolving: 'Solving...',
   },
 }
