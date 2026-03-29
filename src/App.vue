@@ -53,6 +53,7 @@ const {
     applyPeerMove(move)
   },
   onSync(data) {
+    showWin.value = false
     applyPeerSync(data)
     timer.start(data.timerStart)
     toast.show(t('syncedWithHost'))
@@ -74,6 +75,7 @@ const {
   onConnChange() {},
   onNewGameRequest() { onNewGame() },
   onStartGame(data) {
+    showWin.value = false
     applyPeerSync(data)
     timer.start(data.timerStart)
     toast.show(t('gameStarted'))
