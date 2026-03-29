@@ -23,7 +23,7 @@ import WinOverlay from './components/WinOverlay.vue'
 import RaceProgress from './components/RaceProgress.vue'
 import AppToast from './components/AppToast.vue'
 
-const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerMove, countCorrect } = useGameState()
+const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerSyncRaceMode, applyPeerMove, countCorrect } = useGameState()
 const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
@@ -45,6 +45,7 @@ const {
   broadcastMove,
   broadcastCursor,
   broadcastFullState,
+  broadcastRaceSync,
   broadcastProgress,
   broadcastRaceFinished,
   sendToPeer,
@@ -59,20 +60,34 @@ const {
   },
   onSync(data) {
     showWin.value = false
-    applyPeerSync(data)
+    if (data.raceMode) {
+      applyPeerSyncRaceMode(data)
+    } else {
+      applyPeerSync(data)
+    }
     timer.start(data.timerStart)
     toast.show(t('syncedWithHost'))
   },
   onHello(peerId) {
     if (collab.isHost && !collab.waiting) {
-      sendToPeer(peerId, {
-        type: 'sync',
-        seed: state.seedDisplay,
-        difficulty: state.difficulty,
-        board: state.board.map((r) => [...r]),
-        cellOwners: state.cellOwners.map((r) => [...r]),
-        timerStart: timer.getStartTime(),
-      })
+      if (collab.gameMode === 'race') {
+        sendToPeer(peerId, {
+          type: 'sync',
+          seed: state.seedDisplay,
+          difficulty: state.difficulty,
+          timerStart: timer.getStartTime(),
+          raceMode: true,
+        })
+      } else {
+        sendToPeer(peerId, {
+          type: 'sync',
+          seed: state.seedDisplay,
+          difficulty: state.difficulty,
+          board: state.board.map((r) => [...r]),
+          cellOwners: state.cellOwners.map((r) => [...r]),
+          timerStart: timer.getStartTime(),
+        })
+      }
     }
   },
   onCursor() {},
@@ -83,7 +98,11 @@ const {
     showWin.value = false
     collab.gameMode = data.gameMode || 'battle'
     collab.peerProgress = {}
-    applyPeerSync(data)
+    if (data.raceMode) {
+      applyPeerSyncRaceMode(data)
+    } else {
+      applyPeerSync(data)
+    }
     timer.start(data.timerStart)
     toast.show(t('gameStarted'))
   },
@@ -252,7 +271,10 @@ function onNewGame() {
   state.seedDisplay = seed
   startGame(seed)
   haptics.medium()
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  if (collab.isHost) {
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  }
 }
 
 function onSeedSubmit(input) {
@@ -260,7 +282,10 @@ function onSeedSubmit(input) {
   const seed = parseSeedInput(input)
   state.seedDisplay = seed
   startGame(seed)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  if (collab.isHost) {
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  }
 }
 
 function onDifficultyIdxUpdate(idx) {
@@ -270,7 +295,10 @@ function onDifficultyIdxUpdate(idx) {
 function onDifficultyChange() {
   updateSeedDisplay()
   startGame(state.seedDisplay)
-  if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  if (collab.isHost) {
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  }
 }
 
 function onWaitingRoomDifficultyChange() {
@@ -286,7 +314,7 @@ function onSelect(r, c) {
 function onNumber(n) {
   const move = placeNumber(n, false, collab.myColor)
   if (move) {
-    broadcastMove(move)
+    if (collab.gameMode !== 'race') broadcastMove(move)
     if (collab.gameMode === 'race' && collab.roomId) {
       const { correct, total } = countCorrect()
       broadcastProgress(correct, total, collab.myColor)
@@ -298,7 +326,7 @@ function onNumber(n) {
 function onErase() {
   const move = eraseCell()
   if (move) {
-    broadcastMove(move)
+    if (collab.gameMode !== 'race') broadcastMove(move)
     if (collab.gameMode === 'race' && collab.roomId) {
       const { correct, total } = countCorrect()
       broadcastProgress(correct, total, collab.myColor)

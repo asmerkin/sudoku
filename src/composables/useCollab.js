@@ -231,10 +231,18 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'race-finished', color, finishTime, correct, total })
   }
 
+  function broadcastRaceSync(seed, difficulty, timerStart) {
+    broadcast({ type: 'sync', seed, difficulty, timerStart, raceMode: true })
+  }
+
   function broadcastStartGame(seed, difficulty, board, cellOwners, timerStart) {
     collab.waiting = false
     collab.peerProgress = {}
-    broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart, gameMode: collab.gameMode })
+    if (collab.gameMode === 'race') {
+      broadcast({ type: 'start-game', seed, difficulty, timerStart, gameMode: 'race', raceMode: true })
+    } else {
+      broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart, gameMode: collab.gameMode })
+    }
   }
 
   function createRoom() {
@@ -324,6 +332,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     sendToPeer,
     requestNewGame,
     broadcastStartGame,
+    broadcastRaceSync,
     broadcastProgress,
     broadcastRaceFinished,
     setPTT,
