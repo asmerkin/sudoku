@@ -8,6 +8,7 @@ import { useCollab } from './composables/useCollab.js'
 import { usePrint } from './composables/usePrint.js'
 import { useI18n } from './composables/useI18n.js'
 import { useHaptics } from './composables/useHaptics.js'
+import { useTheme } from './composables/useTheme.js'
 
 import ThemeToggle from './components/ThemeToggle.vue'
 import LangToggle from './components/LangToggle.vue'
@@ -27,6 +28,7 @@ const toast = useToast()
 const { printSudokus } = usePrint()
 const { t } = useI18n()
 const haptics = useHaptics()
+const { theme } = useTheme()
 
 const showWin = ref(false)
 const pendingAction = ref(null)
@@ -76,6 +78,36 @@ const {
     toast.show(t('gameStarted'))
   },
 })
+
+// Override accent color to match assigned multiplayer color
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16)
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`
+}
+
+watch(
+  () => [collab.myColor, theme.value],
+  ([color, currentTheme]) => {
+    const el = document.documentElement.style
+    if (!color) {
+      el.removeProperty('--accent')
+      el.removeProperty('--accent-dim')
+      el.removeProperty('--accent-glow')
+      el.removeProperty('--input')
+      el.removeProperty('--highlight')
+      el.removeProperty('--glow')
+      return
+    }
+    const rgb = hexToRgb(color)
+    const isDark = currentTheme === 'dark'
+    el.setProperty('--accent', color)
+    el.setProperty('--accent-dim', `rgba(${rgb},${isDark ? 0.12 : 0.10})`)
+    el.setProperty('--accent-glow', `rgba(${rgb},${isDark ? 0.06 : 0.05})`)
+    el.setProperty('--input', color)
+    el.setProperty('--highlight', `rgba(${rgb},${isDark ? 0.05 : 0.06})`)
+    el.setProperty('--glow', isDark ? `0 0 16px rgba(${rgb},0.1)` : 'none')
+  },
+)
 
 const playerRanking = computed(() => {
   if (!showWin.value || !collab.roomId) return []
