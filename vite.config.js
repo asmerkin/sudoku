@@ -22,8 +22,8 @@ export default defineConfig({
         background_color: '#0e0e12',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/sudoku/',
-        start_url: '/sudoku/',
+        scope: '/',
+        start_url: '/',
         handle_links: 'preferred',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
