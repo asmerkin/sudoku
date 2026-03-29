@@ -9,15 +9,21 @@ const voice = reactive({
 let localStream = null
 const mediaConns = new Map() // peerId -> MediaConnection
 const audioElements = new Map() // peerId -> HTMLAudioElement
+const pendingIncomingCalls = [] // mediaConns received before mic was ready
 
 export function useVoiceChat() {
   async function initMic() {
+    if (localStream) return // already initialized
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       // Start muted
       localStream.getAudioTracks().forEach((t) => { t.enabled = false })
       voice.micReady = true
       voice.micError = false
+      // Answer any calls that arrived before mic was ready
+      while (pendingIncomingCalls.length) {
+        answerCall(pendingIncomingCalls.shift())
+      }
     } catch {
       voice.micReady = false
       voice.micError = true
@@ -44,7 +50,10 @@ export function useVoiceChat() {
   }
 
   function answerCall(mediaConn) {
-    if (!localStream) return
+    if (!localStream) {
+      pendingIncomingCalls.push(mediaConn)
+      return
+    }
     const peerId = mediaConn.peer
     mediaConns.set(peerId, mediaConn)
     mediaConn.answer(localStream)
@@ -56,6 +65,13 @@ export function useVoiceChat() {
     if (!localStream) return
     voice.isTalking = active
     localStream.getAudioTracks().forEach((t) => { t.enabled = active })
+  }
+
+  function connectToPeers(peer, peerIds) {
+    if (!localStream || !peer) return
+    for (const id of peerIds) {
+      callPeer(peer, id)
+    }
   }
 
   function cleanupPeer(peerId) {
@@ -77,10 +93,11 @@ export function useVoiceChat() {
       localStream = null
     }
     for (const [id] of mediaConns) cleanupPeer(id)
+    pendingIncomingCalls.length = 0
     voice.micReady = false
     voice.isTalking = false
     voice.micError = false
   }
 
-  return { voice, initMic, callPeer, answerCall, setPTT, cleanupPeer, destroy }
+  return { voice, initMic, callPeer, answerCall, setPTT, connectToPeers, cleanupPeer, destroy }
 }

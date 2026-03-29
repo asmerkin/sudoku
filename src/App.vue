@@ -45,6 +45,7 @@ const {
   requestNewGame,
   broadcastStartGame,
   setPTT,
+  initMicAndConnect,
 } = useCollab({
   onMove(move) {
     applyPeerMove(move)
@@ -196,6 +197,15 @@ function onLeaveRoom() {
   haptics.medium()
 }
 
+async function onPttStart() {
+  if (!voice.micReady) {
+    await initMicAndConnect()
+    if (!voice.micReady) return
+  }
+  setPTT(true)
+  haptics.medium()
+}
+
 function onCopyRoomId(roomId) {
   const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
   navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
@@ -256,7 +266,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       @join-room="onJoinRoom"
       @copy-room-id="onCopyRoomId"
       @leave-room="onLeaveRoom"
-      @ptt-start="setPTT(true); haptics.medium()"
+      @ptt-start="onPttStart()"
       @ptt-end="setPTT(false)"
     />
 

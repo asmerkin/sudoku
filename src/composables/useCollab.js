@@ -21,7 +21,7 @@ let nextColorIdx = 0
 
 export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange, onNewGameRequest, onStartGame }) {
   const { t } = useI18n()
-  const { voice, initMic, callPeer, answerCall, setPTT, cleanupPeer, destroy: destroyVoice } = useVoiceChat()
+  const { voice, initMic, callPeer, answerCall, setPTT, connectToPeers, cleanupPeer, destroy: destroyVoice } = useVoiceChat()
   function updateConnectedCount() {
     collab.connectedCount = collab.conns.filter((c) => c.open).length
     onConnChange?.()
@@ -175,7 +175,6 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.peer.on('connection', (conn) => setupConn(conn))
     collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
     collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
-    initMic()
     return roomId
   }
 
@@ -194,8 +193,15 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       })
       collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
       collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
-      initMic()
     })
+  }
+
+  async function initMicAndConnect() {
+    await initMic()
+    if (voice.micReady && collab.peer) {
+      const peerIds = Object.keys(collab.peerCursors)
+      connectToPeers(collab.peer, peerIds)
+    }
   }
 
   function leaveRoom() {
@@ -231,5 +237,6 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     requestNewGame,
     broadcastStartGame,
     setPTT,
+    initMicAndConnect,
   }
 }
