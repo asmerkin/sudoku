@@ -48,6 +48,7 @@ export const messages = {
     raceFinished: '¡Terminó!',
     raceWinner: '¡Ganador!',
     raceSolving: 'Resolviendo...',
+    difficulty: 'Dificultad',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -98,5 +99,6 @@ export const messages = {
     raceFinished: 'Finished!',
     raceWinner: 'Winner!',
     raceSolving: 'Solving...',
+    difficulty: 'Difficulty',
   },
 }

@@ -1,15 +1,17 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from '../composables/useI18n.js'
+import DifficultySlider from './DifficultySlider.vue'
 
 const { t } = useI18n()
 
 const props = defineProps({
   collab: Object,
   gameMode: { type: String, default: 'battle' },
+  difficultyIdx: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id', 'update:game-mode'])
+const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id', 'update:game-mode', 'update:difficulty-idx', 'difficulty-change'])
 
 const canNativeShare = !!navigator.share
 
@@ -105,6 +107,18 @@ const players = computed(() => {
         <p class="text-text-muted text-[0.6rem] font-mono text-center -mt-2">
           {{ gameMode === 'race' ? t('modeRaceHint') : t('modeBattleHint') }}
         </p>
+
+        <!-- Difficulty selector (host only) -->
+        <div v-if="collab.isHost" class="w-full flex items-center justify-between gap-3">
+          <span class="text-text-muted text-[0.7rem] font-mono uppercase tracking-wide">
+            {{ t('difficulty') }}
+          </span>
+          <DifficultySlider
+            :model-value="difficultyIdx"
+            @update:model-value="emit('update:difficulty-idx', $event)"
+            @change="emit('difficulty-change', $event)"
+          />
+        </div>
 
         <!-- Copy link + Start button (host only) -->
         <template v-if="collab.isHost">
