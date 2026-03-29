@@ -18,6 +18,7 @@ const collab = reactive({
 })
 
 let nextColorIdx = 0
+let visibilityHandler = null
 
 export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange, onNewGameRequest, onStartGame }) {
   const { t } = useI18n()
@@ -129,6 +130,29 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     }
   }
 
+  function setupVisibilityHandler() {
+    if (visibilityHandler) return
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible' && collab.peer) {
+        if (collab.peer.disconnected && !collab.peer.destroyed) {
+          collab.peer.reconnect()
+        }
+        if (!collab.isHost && collab.conns.filter(c => c.open).length === 0 && collab.roomId) {
+          const conn = collab.peer.connect(collab.roomId, { reliable: true })
+          setupConn(conn)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', visibilityHandler)
+  }
+
+  function teardownVisibilityHandler() {
+    if (visibilityHandler) {
+      document.removeEventListener('visibilitychange', visibilityHandler)
+      visibilityHandler = null
+    }
+  }
+
   function setupConn(conn) {
     collab.conns.push(conn)
     conn.on('data', (data) => handlePeerData(conn.peer, data))
@@ -139,10 +163,23 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     })
     conn.on('close', () => {
       collab.conns = collab.conns.filter((c) => c !== conn)
-      delete collab.peerCursors[conn.peer]
       cleanupPeer(conn.peer)
       updateConnectedCount()
-      if (collab.isHost) broadcastPeerList()
+      if (collab.isHost) {
+        delete collab.peerCursors[conn.peer]
+        broadcastPeerList()
+      } else {
+        setTimeout(() => {
+          if (collab.peer && !collab.peer.destroyed && collab.conns.filter(c => c.open).length === 0 && collab.roomId) {
+            const newConn = collab.peer.connect(collab.roomId, { reliable: true })
+            setupConn(newConn)
+            onToast?.(t('reconnecting'))
+          }
+        }, 2000)
+      }
+    })
+    conn.on('error', (err) => {
+      console.warn('Connection error:', conn.peer, err)
     })
   }
 
@@ -175,6 +212,10 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.peer.on('connection', (conn) => setupConn(conn))
     collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
     collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
+    collab.peer.on('disconnected', () => {
+      if (collab.peer && !collab.peer.destroyed) collab.peer.reconnect()
+    })
+    setupVisibilityHandler()
     return roomId
   }
 
@@ -193,6 +234,10 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       })
       collab.peer.on('call', (mediaConn) => answerCall(mediaConn))
       collab.peer.on('error', (err) => onToast?.('Error: ' + err.type, 3000))
+      collab.peer.on('disconnected', () => {
+        if (collab.peer && !collab.peer.destroyed) collab.peer.reconnect()
+      })
+      setupVisibilityHandler()
     })
   }
 
@@ -217,6 +262,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.connectedCount = 0
     nextColorIdx = 0
     destroyVoice()
+    teardownVisibilityHandler()
     // Clean room param from URL
     const url = new URL(window.location)
     url.searchParams.delete('room')

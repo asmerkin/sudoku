@@ -238,9 +238,19 @@ async function onPttStart() {
   haptics.medium()
 }
 
-function onCopyRoomId(roomId) {
+async function onCopyRoomId(roomId) {
   const url = `${window.location.origin}${window.location.pathname}?room=${roomId}`
-  navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
+  if (navigator.share) {
+    try {
+      await navigator.share({ url })
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
+      }
+    }
+  } else {
+    navigator.clipboard.writeText(url).then(() => toast.show(t('linkCopied')))
+  }
 }
 
 function confirmName() {
