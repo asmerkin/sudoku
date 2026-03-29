@@ -273,6 +273,10 @@ function onDifficultyChange() {
   if (collab.isHost) broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
 }
 
+function onWaitingRoomDifficultyChange() {
+  updateSeedDisplay()
+}
+
 function onSelect(r, c) {
   select(r, c)
   broadcastCursor(r, c)
@@ -453,7 +457,10 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       v-if="collab.waiting"
       :collab="collab"
       :game-mode="collab.gameMode"
+      :difficulty-idx="state.difficultyIdx"
       @update:game-mode="collab.gameMode = $event"
+      @update:difficulty-idx="onDifficultyIdxUpdate"
+      @difficulty-change="onWaitingRoomDifficultyChange"
       @start-game="onStartFromWaitingRoom"
       @copy-room-id="onCopyRoomId"
       @leave-room="onLeaveRoom"
