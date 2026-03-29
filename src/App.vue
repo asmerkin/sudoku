@@ -17,6 +17,7 @@ import TimerBar from './components/TimerBar.vue'
 import SudokuBoard from './components/SudokuBoard.vue'
 import NumPad from './components/NumPad.vue'
 import ActionBar from './components/ActionBar.vue'
+import WaitingRoom from './components/WaitingRoom.vue'
 import WinOverlay from './components/WinOverlay.vue'
 import AppToast from './components/AppToast.vue'
 
@@ -42,6 +43,7 @@ const {
   broadcastFullState,
   sendToPeer,
   requestNewGame,
+  broadcastStartGame,
   setPTT,
 } = useCollab({
   onMove(move) {
@@ -53,7 +55,7 @@ const {
     toast.show(t('syncedWithHost'))
   },
   onHello(peerId) {
-    if (collab.isHost) {
+    if (collab.isHost && !collab.waiting) {
       sendToPeer(peerId, {
         type: 'sync',
         seed: state.seedDisplay,
@@ -68,6 +70,11 @@ const {
   onToast(msg, ms) { toast.show(msg, ms) },
   onConnChange() {},
   onNewGameRequest() { onNewGame() },
+  onStartGame(data) {
+    applyPeerSync(data)
+    timer.start(data.timerStart)
+    toast.show(t('gameStarted'))
+  },
 })
 
 const playerRanking = computed(() => {
@@ -172,6 +179,16 @@ function onErase() {
 function onUndo() { undo(); haptics.light() }
 function onToggleNotes() { toggleNotes(); haptics.selection() }
 function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
+function onStartFromWaitingRoom() {
+  const seed = encodeSeed(randomSeed(), state.difficulty)
+  state.seedDisplay = seed
+  showWin.value = false
+  init(seed)
+  timer.start()
+  haptics.medium()
+  broadcastStartGame(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+}
+
 function onCreateRoom() { pendingAction.value = { type: 'create' } }
 function onJoinRoom(roomId) { pendingAction.value = { type: 'join', roomId } }
 function onLeaveRoom() {
@@ -269,6 +286,13 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
         @select="onSelect"
       />
     </div>
+
+    <WaitingRoom
+      v-if="collab.waiting"
+      :collab="collab"
+      @start-game="onStartFromWaitingRoom"
+      @leave-room="onLeaveRoom"
+    />
 
     <WinOverlay
       :show="showWin"
