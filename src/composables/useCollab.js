@@ -14,11 +14,12 @@ const collab = reactive({
   myName: '',
   peerCursors: {},
   connectedCount: 0,
+  waiting: false,
 })
 
 let nextColorIdx = 0
 
-export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange, onNewGameRequest }) {
+export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnChange, onNewGameRequest, onStartGame }) {
   const { t } = useI18n()
   const { voice, initMic, callPeer, answerCall, setPTT, cleanupPeer, destroy: destroyVoice } = useVoiceChat()
   function updateConnectedCount() {
@@ -122,6 +123,9 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       if (collab.isHost) onNewGameRequest?.()
     } else if (data.type === 'new-game') {
       // Host is telling all guests a new game is starting (via sync)
+    } else if (data.type === 'start-game') {
+      collab.waiting = false
+      onStartGame?.(data)
     }
   }
 
@@ -151,10 +155,16 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'new-game-request' })
   }
 
+  function broadcastStartGame(seed, difficulty, board, cellOwners, timerStart) {
+    collab.waiting = false
+    broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
+  }
+
   function createRoom() {
     const roomId = 'sdk-' + Math.random().toString(36).substr(2, 6)
     collab.roomId = roomId
     collab.isHost = true
+    collab.waiting = true
     collab.myColor = PEER_COLORS[0]
     nextColorIdx = 1
     collab.peer = new Peer(roomId)
@@ -172,6 +182,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   function joinRoom(roomId) {
     collab.roomId = roomId
     collab.isHost = false
+    collab.waiting = true
     collab.myColor = null // Don't set a default; wait for host assignment
     collab.peer = new Peer()
     return new Promise((resolve) => {
@@ -194,6 +205,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.peer = null
     collab.roomId = null
     collab.isHost = false
+    collab.waiting = false
     collab.myColor = null
     collab.peerCursors = {}
     collab.connectedCount = 0
@@ -217,6 +229,7 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcastFullState,
     sendToPeer,
     requestNewGame,
+    broadcastStartGame,
     setPTT,
   }
 }
