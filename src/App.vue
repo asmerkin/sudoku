@@ -467,7 +467,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
     <GameControls
       :seed-display="state.seedDisplay"
       :difficulty-idx="state.difficultyIdx"
-      :disabled="collab.roomId && !collab.isHost"
+      :disabled="collab.roomId && !collab.waiting"
       @update:seed-display="state.seedDisplay = $event"
       @update:difficulty-idx="onDifficultyIdxUpdate"
       @difficulty-change="onDifficultyChange"
