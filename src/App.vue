@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { encodeSeed, randomSeed } from './composables/useSudokuEngine.js'
+import { decodeSeed, encodeSeed, randomSeed } from './composables/useSudokuEngine.js'
 import { useGameState } from './composables/useGameState.js'
 import { useTimer } from './composables/useTimer.js'
 import { useToast } from './composables/useToast.js'
@@ -266,8 +266,19 @@ function confirmName() {
 }
 
 onMounted(() => {
-  const urlRoom = new URLSearchParams(window.location.search).get('room')
-  if (urlRoom) pendingAction.value = { type: 'join', roomId: urlRoom }
+  const params = new URLSearchParams(window.location.search)
+  const urlRoom = params.get('room')
+  const urlSeed = params.get('seed')
+  if (urlRoom) {
+    pendingAction.value = { type: 'join', roomId: urlRoom }
+  } else if (urlSeed) {
+    const decoded = decodeSeed(urlSeed)
+    if (decoded.difficulty) setDifficulty(decoded.idx)
+    const seed = decoded.difficulty ? urlSeed : encodeSeed(decoded.raw, state.difficulty)
+    state.seedDisplay = seed
+    startGame(seed)
+    window.history.replaceState({}, '', window.location.pathname)
+  }
 })
 
 function onKeydown(e) {
