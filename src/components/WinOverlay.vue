@@ -12,6 +12,7 @@ const props = defineProps({
   ranking: Array,
   isHost: Boolean,
   isMultiplayer: Boolean,
+  gameMode: { type: String, default: 'battle' },
 })
 
 const emit = defineEmits(['new-game', 'request-new-game'])
@@ -94,8 +95,15 @@ onUnmounted(() => clearTimeout(cleanupTimer))
           <span class="font-bold text-text-dim w-3 text-right">{{ i + 1 }}</span>
           <span class="w-2 h-2 rounded-full shrink-0" :style="{ background: player.color }" />
           <span class="text-text flex-1 truncate">{{ player.name }}</span>
-          <span class="text-accent tabular-nums">{{ player.correct }}&#10003;</span>
-          <span v-if="player.errors" class="text-error tabular-nums">{{ player.errors }}&#10007;</span>
+          <template v-if="gameMode === 'race'">
+            <span v-if="player.finished && i === 0" class="text-accent font-bold">{{ t('raceWinner') }}</span>
+            <span v-else-if="player.finished" class="text-accent tabular-nums">{{ t('raceFinished') }}</span>
+            <span v-else class="text-text-muted tabular-nums">{{ t('raceSolving') }}</span>
+          </template>
+          <template v-else>
+            <span class="text-accent tabular-nums">{{ player.correct }}&#10003;</span>
+            <span v-if="player.errors" class="text-error tabular-nums">{{ player.errors }}&#10007;</span>
+          </template>
         </div>
       </div>
 

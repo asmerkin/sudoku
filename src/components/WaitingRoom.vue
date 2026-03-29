@@ -6,9 +6,10 @@ const { t } = useI18n()
 
 const props = defineProps({
   collab: Object,
+  gameMode: { type: String, default: 'battle' },
 })
 
-const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id'])
+const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id', 'update:game-mode'])
 
 const canNativeShare = !!navigator.share
 
@@ -78,6 +79,31 @@ const players = computed(() => {
         <div v-if="!collab.isHost" class="flex items-center gap-2 text-text-muted text-xs font-mono">
           <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           {{ t('waitingForHost') }}
+        </div>
+
+        <!-- Game mode selector -->
+        <div v-if="collab.isHost" class="w-full flex rounded-lg border border-border overflow-hidden">
+          <button
+            class="flex-1 py-2 text-[0.7rem] font-bold uppercase tracking-wide transition-all duration-250 cursor-pointer"
+            :class="gameMode === 'battle'
+              ? 'bg-accent text-bg'
+              : 'bg-surface text-text-muted hover:text-text'"
+            @click="emit('update:game-mode', 'battle')"
+          >
+            {{ t('modeBattle') }}
+          </button>
+          <button
+            class="flex-1 py-2 text-[0.7rem] font-bold uppercase tracking-wide transition-all duration-250 cursor-pointer"
+            :class="gameMode === 'race'
+              ? 'bg-accent text-bg'
+              : 'bg-surface text-text-muted hover:text-text'"
+            @click="emit('update:game-mode', 'race')"
+          >
+            {{ t('modeRace') }}
+          </button>
+        </div>
+        <div v-else class="text-text-muted text-xs font-mono text-center">
+          {{ gameMode === 'race' ? t('modeRace') : t('modeBattle') }}
         </div>
 
         <!-- Copy link + Start button (host only) -->

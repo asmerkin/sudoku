@@ -20,9 +20,10 @@ import NumPad from './components/NumPad.vue'
 import ActionBar from './components/ActionBar.vue'
 import WaitingRoom from './components/WaitingRoom.vue'
 import WinOverlay from './components/WinOverlay.vue'
+import RaceProgress from './components/RaceProgress.vue'
 import AppToast from './components/AppToast.vue'
 
-const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerMove } = useGameState()
+const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerMove, countCorrect } = useGameState()
 const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
@@ -33,6 +34,7 @@ const { theme } = useTheme()
 const showWin = ref(false)
 const pendingAction = ref(null)
 const nameInput = ref('')
+const localFinishTime = ref(null)
 
 const {
   collab,
@@ -43,6 +45,8 @@ const {
   broadcastMove,
   broadcastCursor,
   broadcastFullState,
+  broadcastProgress,
+  broadcastRaceFinished,
   sendToPeer,
   requestNewGame,
   broadcastStartGame,
@@ -50,6 +54,7 @@ const {
   initMicAndConnect,
 } = useCollab({
   onMove(move) {
+    if (collab.gameMode === 'race') return
     applyPeerMove(move)
   },
   onSync(data) {
@@ -76,6 +81,8 @@ const {
   onNewGameRequest() { onNewGame() },
   onStartGame(data) {
     showWin.value = false
+    collab.gameMode = data.gameMode || 'battle'
+    collab.peerProgress = {}
     applyPeerSync(data)
     timer.start(data.timerStart)
     toast.show(t('gameStarted'))
@@ -115,18 +122,55 @@ watch(
 const playerRanking = computed(() => {
   if (!showWin.value || !collab.roomId) return []
 
+  const colorToName = {}
+  if (collab.myColor) colorToName[collab.myColor] = collab.myName || t('you')
+  for (const data of Object.values(collab.peerCursors)) {
+    if (data.color) colorToName[data.color] = data.name || 'P'
+  }
+
+  if (collab.gameMode === 'race') {
+    const stats = []
+    // Add local player
+    if (collab.myColor) {
+      const local = countCorrect()
+      stats.push({
+        color: collab.myColor,
+        name: colorToName[collab.myColor] || t('you'),
+        correct: local.correct,
+        total: local.total,
+        finished: state.won,
+        finishTime: state.won ? (localFinishTime.value || Date.now()) : null,
+        errors: state.playerErrors[collab.myColor] || 0,
+      })
+    }
+    // Add peers from peerProgress
+    for (const [color, prog] of Object.entries(collab.peerProgress)) {
+      stats.push({
+        color,
+        name: colorToName[color] || '?',
+        correct: prog.correct || 0,
+        total: prog.total || 0,
+        finished: prog.finished || false,
+        finishTime: prog.finishTime || null,
+        errors: 0,
+      })
+    }
+    // Sort: finished first (by finishTime), then by correct count desc
+    return stats.sort((a, b) => {
+      if (a.finished && !b.finished) return -1
+      if (!a.finished && b.finished) return 1
+      if (a.finished && b.finished) return (a.finishTime || 0) - (b.finishTime || 0)
+      return b.correct - a.correct
+    })
+  }
+
+  // Battle mode (original logic)
   const correctCounts = {}
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const owner = state.cellOwners[r]?.[c]
       if (owner) correctCounts[owner] = (correctCounts[owner] || 0) + 1
     }
-  }
-
-  const colorToName = {}
-  if (collab.myColor) colorToName[collab.myColor] = collab.myName || t('you')
-  for (const data of Object.values(collab.peerCursors)) {
-    if (data.color) colorToName[data.color] = data.name || 'P'
   }
 
   const allColors = new Set([
@@ -147,18 +191,58 @@ const playerRanking = computed(() => {
   return stats.sort((a, b) => b.correct - a.correct || a.errors - b.errors)
 })
 
+const raceProgressPlayers = computed(() => {
+  if (collab.gameMode !== 'race' || !collab.roomId) return []
+
+  const colorToName = {}
+  if (collab.myColor) colorToName[collab.myColor] = collab.myName || t('you')
+  for (const data of Object.values(collab.peerCursors)) {
+    if (data.color) colorToName[data.color] = data.name || 'P'
+  }
+
+  const players = []
+  // Local player
+  if (collab.myColor) {
+    const local = countCorrect()
+    players.push({
+      color: collab.myColor,
+      name: colorToName[collab.myColor] || t('you'),
+      correct: local.correct,
+      total: local.total,
+      finished: state.won,
+    })
+  }
+  // Peers
+  for (const [color, prog] of Object.entries(collab.peerProgress)) {
+    players.push({
+      color,
+      name: colorToName[color] || '?',
+      correct: prog.correct || 0,
+      total: prog.total || 0,
+      finished: prog.finished || false,
+    })
+  }
+  return players
+})
+
 watch(() => state.mistakes, () => { haptics.error() })
 
 watch(() => state.won, (won) => {
   if (won) {
     timer.stop()
     haptics.success()
+    if (collab.gameMode === 'race' && collab.roomId) {
+      localFinishTime.value = Date.now()
+      const { correct, total } = countCorrect()
+      broadcastRaceFinished(collab.myColor, localFinishTime.value, correct, total)
+    }
     setTimeout(() => { showWin.value = true }, 300)
   }
 })
 
 function startGame(seedValue) {
   showWin.value = false
+  localFinishTime.value = null
   init(seedValue)
   timer.start()
 }
@@ -199,6 +283,10 @@ function onNumber(n) {
   const move = placeNumber(n, false, collab.myColor)
   if (move) {
     broadcastMove(move)
+    if (collab.gameMode === 'race' && collab.roomId) {
+      const { correct, total } = countCorrect()
+      broadcastProgress(correct, total, collab.myColor)
+    }
     haptics.light()
   }
 }
@@ -207,6 +295,10 @@ function onErase() {
   const move = eraseCell()
   if (move) {
     broadcastMove(move)
+    if (collab.gameMode === 'race' && collab.roomId) {
+      const { correct, total } = countCorrect()
+      broadcastProgress(correct, total, collab.myColor)
+    }
     haptics.light()
   }
 }
@@ -339,6 +431,11 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
 
     <TimerBar :mistakes="state.mistakes" :time="timer.display.value" />
 
+    <RaceProgress
+      v-if="collab.gameMode === 'race' && collab.roomId && !collab.waiting"
+      :players="raceProgressPlayers"
+    />
+
     <div
       class="relative mb-3.5 animate-fade-up"
       :class="{ 'win-glow': showWin }"
@@ -346,7 +443,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
     >
       <SudokuBoard
         :state="state"
-        :peer-cursors="collab.peerCursors"
+        :peer-cursors="collab.gameMode === 'race' ? {} : collab.peerCursors"
         :won="showWin"
         @select="onSelect"
       />
@@ -355,6 +452,8 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
     <WaitingRoom
       v-if="collab.waiting"
       :collab="collab"
+      :game-mode="collab.gameMode"
+      @update:game-mode="collab.gameMode = $event"
       @start-game="onStartFromWaitingRoom"
       @copy-room-id="onCopyRoomId"
       @leave-room="onLeaveRoom"
@@ -368,6 +467,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       :ranking="playerRanking"
       :is-host="collab.isHost"
       :is-multiplayer="!!collab.roomId"
+      :game-mode="collab.gameMode"
       @new-game="onNewGame"
       @request-new-game="requestNewGame"
     />

@@ -15,6 +15,8 @@ const collab = reactive({
   peerCursors: {},
   connectedCount: 0,
   waiting: false,
+  gameMode: 'battle',
+  peerProgress: {},
 })
 
 let nextColorIdx = 0
@@ -56,8 +58,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
   function handlePeerData(peerId, data) {
     if (data.type === 'move') {
       onMove?.(data.move)
-      // Host relays guest moves to all other guests
-      if (collab.isHost) {
+      // Host relays guest moves to all other guests (battle mode only)
+      if (collab.isHost && collab.gameMode !== 'race') {
         collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) => c.send(data))
       }
     } else if (data.type === 'cursor') {
@@ -132,7 +134,30 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       // Host is telling all guests a new game is starting (via sync)
     } else if (data.type === 'start-game') {
       collab.waiting = false
+      collab.gameMode = data.gameMode || 'battle'
+      collab.peerProgress = {}
       onStartGame?.(data)
+    } else if (data.type === 'progress') {
+      collab.peerProgress[data.color] = {
+        correct: data.correct,
+        total: data.total,
+        finished: collab.peerProgress[data.color]?.finished || false,
+        finishTime: collab.peerProgress[data.color]?.finishTime || null,
+      }
+      if (collab.isHost) {
+        collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) => c.send(data))
+      }
+    } else if (data.type === 'race-finished') {
+      collab.peerProgress[data.color] = {
+        ...collab.peerProgress[data.color],
+        correct: data.correct ?? collab.peerProgress[data.color]?.correct ?? 0,
+        total: data.total ?? collab.peerProgress[data.color]?.total ?? 0,
+        finished: true,
+        finishTime: data.finishTime,
+      }
+      if (collab.isHost) {
+        collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) => c.send(data))
+      }
     }
   }
 
@@ -198,9 +223,18 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'new-game-request' })
   }
 
+  function broadcastProgress(correct, total, color) {
+    broadcast({ type: 'progress', correct, total, color })
+  }
+
+  function broadcastRaceFinished(color, finishTime, correct, total) {
+    broadcast({ type: 'race-finished', color, finishTime, correct, total })
+  }
+
   function broadcastStartGame(seed, difficulty, board, cellOwners, timerStart) {
     collab.waiting = false
-    broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
+    collab.peerProgress = {}
+    broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart, gameMode: collab.gameMode })
   }
 
   function createRoom() {
@@ -266,6 +300,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     collab.myColor = null
     collab.peerCursors = {}
     collab.connectedCount = 0
+    collab.gameMode = 'battle'
+    collab.peerProgress = {}
     nextColorIdx = 0
     destroyVoice()
     teardownVisibilityHandler()
@@ -288,6 +324,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     sendToPeer,
     requestNewGame,
     broadcastStartGame,
+    broadcastProgress,
+    broadcastRaceFinished,
     setPTT,
     initMicAndConnect,
   }

@@ -234,6 +234,17 @@ export function useGameState() {
     }
   }
 
+  function countCorrect() {
+    let correct = 0, total = 0
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++)
+        if (state.puzzle[r][c] === 0) {
+          total++
+          if (state.board[r][c] === state.solution[r][c]) correct++
+        }
+    return { correct, total }
+  }
+
   return {
     state,
     init,
@@ -248,5 +259,6 @@ export function useGameState() {
     moveSelection,
     applyPeerSync,
     applyPeerMove,
+    countCorrect,
   }
 }
