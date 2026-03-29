@@ -16,6 +16,7 @@ const emit = defineEmits(['create-room', 'join-room', 'copy-room-id', 'leave-roo
 const showJoinInput = ref(false)
 const joinInput = ref('')
 
+const canNativeShare = !!navigator.share
 const isConnected = computed(() => props.collab.conns.some((c) => c.open))
 const playerCount = computed(() => Object.keys(props.collab.peerCursors).length + 1)
 
@@ -88,11 +89,16 @@ function onJoinKeydown(e) {
                flex items-center gap-1"
         @click="emit('copy-room-id', collab.roomId)"
       >
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg v-if="canNativeShare" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+          <polyline points="16 6 12 2 8 6" />
+          <line x1="12" y1="2" x2="12" y2="15" />
+        </svg>
+        <svg v-else class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
           <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
         </svg>
-        {{ t('copyLink') }}
+        {{ canNativeShare ? t('shareLink') : t('copyLink') }}
       </button>
 
       <!-- Connected count -->
