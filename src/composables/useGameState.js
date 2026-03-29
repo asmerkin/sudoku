@@ -215,6 +215,29 @@ export function useGameState() {
     state.won = false
   }
 
+  function applyPeerSyncRaceMode(data) {
+    const newSeed = data.seed
+    // If same seed (reconnection), preserve current board progress
+    if (state.seed === newSeed) return
+
+    state.seedDisplay = newSeed
+    state.seed = newSeed
+    state.difficulty = data.difficulty
+    state.difficultyIdx = DIFF_KEYS.indexOf(data.difficulty)
+
+    const { puzzle, solution } = generatePuzzle(hashSeed(state.seed), DIFFICULTY[state.difficulty])
+    state.puzzle = puzzle
+    state.solution = solution
+    state.board = puzzle.map((r) => [...r])
+    state.cellOwners = createEmptyOwners()
+    state.notes = createEmptyNotes()
+    state.selected = null
+    state.mistakes = 0
+    state.playerErrors = {}
+    state.history = []
+    state.won = false
+  }
+
   function applyPeerMove(move) {
     if (move.type === 'place') {
       if (state.board[move.r][move.c] !== 0 && state.board[move.r][move.c] === state.solution[move.r][move.c]) return
@@ -258,6 +281,7 @@ export function useGameState() {
     toggleNotes,
     moveSelection,
     applyPeerSync,
+    applyPeerSyncRaceMode,
     applyPeerMove,
     countCorrect,
   }
