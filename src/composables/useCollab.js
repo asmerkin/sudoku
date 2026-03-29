@@ -155,6 +155,12 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
         finished: true,
         finishTime: data.finishTime,
       }
+      // Find finisher name by color
+      let finisherName = '?'
+      for (const cursor of Object.values(collab.peerCursors)) {
+        if (cursor.color === data.color) { finisherName = cursor.name || '?'; break }
+      }
+      onToast?.(t('playerFinishedRace', finisherName), 3000)
       if (collab.isHost) {
         collab.conns.filter((c) => c.open && c.peer !== peerId).forEach((c) => c.send(data))
       }

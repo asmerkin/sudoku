@@ -105,6 +105,10 @@ const {
     }
     timer.start(data.timerStart)
     toast.show(t('gameStarted'))
+    if (collab.gameMode === 'race' && collab.roomId && collab.myColor) {
+      const { correct, total } = countCorrect()
+      broadcastProgress(correct, total, collab.myColor)
+    }
   },
 })
 
@@ -307,7 +311,7 @@ function onWaitingRoomDifficultyChange() {
 
 function onSelect(r, c) {
   select(r, c)
-  broadcastCursor(r, c)
+  if (collab.gameMode !== 'race') broadcastCursor(r, c)
   haptics.selection()
 }
 
@@ -335,7 +339,14 @@ function onErase() {
   }
 }
 
-function onUndo() { undo(); haptics.light() }
+function onUndo() {
+  undo()
+  haptics.light()
+  if (collab.gameMode === 'race' && collab.roomId) {
+    const { correct, total } = countCorrect()
+    broadcastProgress(correct, total, collab.myColor)
+  }
+}
 function onToggleNotes() { toggleNotes(); haptics.selection() }
 function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
 function onStartFromWaitingRoom() {
@@ -346,6 +357,10 @@ function onStartFromWaitingRoom() {
   timer.start()
   haptics.medium()
   broadcastStartGame(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  if (collab.gameMode === 'race' && collab.roomId) {
+    const { correct, total } = countCorrect()
+    broadcastProgress(correct, total, collab.myColor)
+  }
 }
 
 function onCreateRoom() { pendingAction.value = { type: 'create' } }
@@ -411,10 +426,10 @@ function onKeydown(e) {
   else if (e.key === 'Backspace' || e.key === 'Delete') onErase()
   else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) onUndo()
   else if (e.key === 'n') onToggleNotes()
-  else if (e.key === 'ArrowUp') { moveSelection(-1, 0); broadcastCursor(state.selected?.[0], state.selected?.[1]) }
-  else if (e.key === 'ArrowDown') { moveSelection(1, 0); broadcastCursor(state.selected?.[0], state.selected?.[1]) }
-  else if (e.key === 'ArrowLeft') { moveSelection(0, -1); broadcastCursor(state.selected?.[0], state.selected?.[1]) }
-  else if (e.key === 'ArrowRight') { moveSelection(0, 1); broadcastCursor(state.selected?.[0], state.selected?.[1]) }
+  else if (e.key === 'ArrowUp') { moveSelection(-1, 0); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
+  else if (e.key === 'ArrowDown') { moveSelection(1, 0); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
+  else if (e.key === 'ArrowLeft') { moveSelection(0, -1); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
+  else if (e.key === 'ArrowRight') { moveSelection(0, 1); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
 }
 
 onMounted(() => document.addEventListener('keydown', onKeydown))
