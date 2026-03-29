@@ -8,7 +8,7 @@ const props = defineProps({
   collab: Object,
 })
 
-const emit = defineEmits(['start-game', 'leave-room'])
+const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id'])
 
 const players = computed(() => {
   const list = []
@@ -78,16 +78,31 @@ const players = computed(() => {
           {{ t('waitingForHost') }}
         </div>
 
-        <!-- Start button (host only) -->
-        <button
-          v-if="collab.isHost"
-          class="bg-accent text-bg font-sans text-sm font-bold
-                 tracking-wide px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-250
-                 uppercase hover:brightness-110 w-full"
-          @click="emit('start-game')"
-        >
-          {{ t('startGame') }}
-        </button>
+        <!-- Copy link + Start button (host only) -->
+        <template v-if="collab.isHost">
+          <button
+            class="bg-surface border border-border text-text-dim font-sans text-[0.7rem] font-medium
+                   tracking-wide px-4 py-2 rounded-lg cursor-pointer transition-all duration-250
+                   uppercase hover:border-accent hover:text-accent hover:bg-accent-glow hover:shadow-(--glow)
+                   w-full flex items-center justify-center gap-2"
+            @click="emit('copy-room-id', collab.roomId)"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+            </svg>
+            {{ t('copyLink') }}
+          </button>
+
+          <button
+            class="bg-accent text-bg font-sans text-sm font-bold
+                   tracking-wide px-6 py-2.5 rounded-lg cursor-pointer transition-all duration-250
+                   uppercase hover:brightness-110 w-full"
+            @click="emit('start-game')"
+          >
+            {{ t('startGame') }}
+          </button>
+        </template>
 
         <!-- Leave button -->
         <button

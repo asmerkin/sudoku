@@ -291,6 +291,7 @@ startGame(encodeSeed(randomSeed(), state.difficulty))
       v-if="collab.waiting"
       :collab="collab"
       @start-game="onStartFromWaitingRoom"
+      @copy-room-id="onCopyRoomId"
       @leave-room="onLeaveRoom"
     />
 
