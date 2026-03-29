@@ -78,13 +78,19 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
       onSync?.(data)
     } else if (data.type === 'hello') {
       if (collab.isHost) {
-        // Assign a color not currently in use by any connected peer
+        // Honor the guest's previous color if still available, otherwise assign a new one
         const usedColors = new Set([collab.myColor, ...Object.values(collab.peerCursors).map(p => p.color)])
-        const color = PEER_COLORS.find(c => !usedColors.has(c)) || PEER_COLORS[nextColorIdx % PEER_COLORS.length]
+        const color = (data.color && !usedColors.has(data.color)) ? data.color : PEER_COLORS.find(c => !usedColors.has(c)) || PEER_COLORS[nextColorIdx % PEER_COLORS.length]
         nextColorIdx++
         collab.peerCursors[peerId] = { r: -1, c: -1, color, name: data.name || '' }
         sendToPeer(peerId, { type: 'your-color', color, name: collab.myName })
         broadcastPeerList()
+        // Send current cursor positions so the reconnected peer sees everyone
+        for (const [id, cursor] of Object.entries(collab.peerCursors)) {
+          if (id !== peerId && cursor.r >= 0) {
+            sendToPeer(peerId, { type: 'cursor', r: cursor.r, c: cursor.c, peerId: id, color: cursor.color, name: cursor.name })
+          }
+        }
       } else {
         // Guest received hello from host
         collab.peerCursors[peerId] = { r: -1, c: -1, color: data.color || '#6ee7b7', name: data.name || '' }
