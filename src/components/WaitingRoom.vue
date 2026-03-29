@@ -102,9 +102,9 @@ const players = computed(() => {
             {{ t('modeRace') }}
           </button>
         </div>
-        <div v-else class="text-text-muted text-xs font-mono text-center">
-          {{ gameMode === 'race' ? t('modeRace') : t('modeBattle') }}
-        </div>
+        <p class="text-text-muted text-[0.6rem] font-mono text-center -mt-2">
+          {{ gameMode === 'race' ? t('modeRaceHint') : t('modeBattleHint') }}
+        </p>
 
         <!-- Copy link + Start button (host only) -->
         <template v-if="collab.isHost">
