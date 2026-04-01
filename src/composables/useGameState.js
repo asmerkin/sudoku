@@ -195,6 +195,24 @@ export function useGameState() {
     ]
   }
 
+  function restoreState(data) {
+    state.seed = data.seed
+    state.seedDisplay = data.seedDisplay
+    state.difficulty = data.difficulty
+    state.difficultyIdx = data.difficultyIdx
+    state.solution = data.solution
+    state.puzzle = data.puzzle
+    state.board = data.board.map(r => [...r])
+    state.notes = data.notes.map(r => r.map(s => s instanceof Set ? new Set(s) : new Set(s)))
+    state.mistakes = data.mistakes || 0
+    state.history = data.history || []
+    state.won = data.won || false
+    state.cellOwners = createEmptyOwners()
+    state.playerErrors = {}
+    state.selected = null
+    state.notesMode = false
+  }
+
   function applyPeerSync(data) {
     const { raw } = decodeSeed(data.seed)
     state.seedDisplay = data.seed
@@ -282,6 +300,7 @@ export function useGameState() {
     moveSelection,
     applyPeerSync,
     applyPeerSyncRaceMode,
+    restoreState,
     applyPeerMove,
     countCorrect,
   }

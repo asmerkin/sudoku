@@ -9,6 +9,7 @@ import { usePrint } from './composables/usePrint.js'
 import { useI18n } from './composables/useI18n.js'
 import { useHaptics } from './composables/useHaptics.js'
 import { useTheme } from './composables/useTheme.js'
+import { saveProgress, loadProgress, clearProgress } from './composables/usePersistence.js'
 
 import ThemeToggle from './components/ThemeToggle.vue'
 import LangToggle from './components/LangToggle.vue'
@@ -23,7 +24,7 @@ import WinOverlay from './components/WinOverlay.vue'
 import RaceProgress from './components/RaceProgress.vue'
 import AppToast from './components/AppToast.vue'
 
-const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, applyPeerSync, applyPeerSyncRaceMode, applyPeerMove, countCorrect } = useGameState()
+const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, restoreState, applyPeerSync, applyPeerSyncRaceMode, applyPeerMove, countCorrect } = useGameState()
 const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
@@ -260,8 +261,20 @@ watch(() => state.won, (won) => {
       broadcastRaceFinished(collab.myColor, localFinishTime.value, correct, total)
     }
     setTimeout(() => { showWin.value = true }, 300)
+    clearProgress()
   }
 })
+
+// Auto-save single-player progress on every board/notes/mistakes change
+watch(
+  () => [state.board, state.notes, state.mistakes],
+  () => {
+    if (!collab.roomId && !state.won) {
+      saveProgress(state, timer.getStartTime())
+    }
+  },
+  { deep: true },
+)
 
 function startGame(seedValue) {
   showWin.value = false
@@ -417,6 +430,13 @@ onMounted(() => {
     state.seedDisplay = seed
     startGame(seed)
     window.history.replaceState({}, '', window.location.pathname)
+  } else {
+    // Try to restore saved single-player progress
+    const saved = loadProgress()
+    if (saved && !saved.won) {
+      restoreState(saved)
+      if (saved.timerStart) timer.start(saved.timerStart)
+    }
   }
 })
 
@@ -435,7 +455,11 @@ function onKeydown(e) {
 onMounted(() => document.addEventListener('keydown', onKeydown))
 onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
-startGame(encodeSeed(randomSeed(), state.difficulty))
+// Start a new game only if no saved progress will be restored on mount
+const saved = loadProgress()
+if (!saved || saved.won) {
+  startGame(encodeSeed(randomSeed(), state.difficulty))
+}
 </script>
 
 <template>
