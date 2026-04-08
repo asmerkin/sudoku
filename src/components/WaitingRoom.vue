@@ -9,9 +9,10 @@ const props = defineProps({
   collab: Object,
   gameMode: { type: String, default: 'battle' },
   difficultyIdx: { type: Number, default: 0 },
+  variant: { type: String, default: 'sudoku' },
 })
 
-const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id', 'update:game-mode', 'update:difficulty-idx', 'difficulty-change'])
+const emit = defineEmits(['start-game', 'leave-room', 'copy-room-id', 'update:game-mode', 'update:difficulty-idx', 'update:variant', 'difficulty-change', 'variant-change'])
 
 const canNativeShare = !!navigator.share
 
@@ -108,7 +109,32 @@ const players = computed(() => {
           {{ gameMode === 'race' ? t('modeRaceHint') : t('modeBattleHint') }}
         </p>
 
-        <!-- Difficulty selector (host only) -->
+        <!-- Variant + Difficulty selectors (host only) -->
+        <div v-if="collab.isHost" class="w-full flex items-center justify-between gap-3">
+          <span class="text-text-muted text-[0.7rem] font-mono uppercase tracking-wide">
+            {{ t('variant') }}
+          </span>
+          <div class="relative inline-flex items-center">
+            <select
+              :value="variant"
+              class="appearance-none bg-surface border border-border text-accent font-mono text-[0.78rem]
+                     font-semibold tracking-wide px-3 pr-7 h-8.5 rounded-btn cursor-pointer
+                     transition-all duration-250 outline-none
+                     hover:border-accent hover:shadow-(--glow)
+                     focus:border-accent focus:shadow-(--glow)"
+              @change="(e) => { emit('update:variant', e.target.value); emit('variant-change', e.target.value) }"
+            >
+              <option value="sudoku" class="bg-surface text-text">{{ t('variantSudoku') }}</option>
+              <option value="hexadoku" class="bg-surface text-text">{{ t('variantHexadoku') }}</option>
+            </select>
+            <svg
+              class="absolute right-2 pointer-events-none text-accent"
+              width="12" height="12" viewBox="0 0 12 12" fill="none"
+            >
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
         <div v-if="collab.isHost" class="w-full flex items-center justify-between gap-3">
           <span class="text-text-muted text-[0.7rem] font-mono uppercase tracking-wide">
             {{ t('difficulty') }}

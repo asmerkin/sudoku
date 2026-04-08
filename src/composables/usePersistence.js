@@ -29,6 +29,7 @@ function deserializeHistory(history) {
 export function saveProgress(state, timerStartTime) {
   try {
     const data = {
+      variant: state.variant,
       board: state.board,
       puzzle: state.puzzle,
       solution: state.solution,

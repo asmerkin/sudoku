@@ -1,28 +1,33 @@
-import { reactive, computed } from 'vue'
+import { reactive } from 'vue'
 import {
   generatePuzzle,
   hashSeed,
   DIFFICULTY,
   DIFF_KEYS,
+  VARIANT_KEYS,
+  getVariantConfig,
   encodeSeed,
   decodeSeed,
   randomSeed,
 } from './useSudokuEngine.js'
 
-function createEmptyNotes() {
-  return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => new Set()))
+function createEmptyNotes(size) {
+  return Array.from({ length: size }, () => Array.from({ length: size }, () => new Set()))
 }
 
-function createEmptyOwners() {
-  return Array.from({ length: 9 }, () => Array(9).fill(null))
+function createEmptyOwners(size) {
+  return Array.from({ length: size }, () => Array(size).fill(null))
 }
 
 const state = reactive({
+  variant: 'sudoku',
+  size: 9,
+  box: 3,
   solution: [],
   puzzle: [],
   board: [],
-  notes: createEmptyNotes(),
-  cellOwners: createEmptyOwners(),
+  notes: createEmptyNotes(9),
+  cellOwners: createEmptyOwners(9),
   selected: null,
   notesMode: false,
   difficulty: 'easy',
@@ -36,19 +41,28 @@ const state = reactive({
 })
 
 export function useGameState() {
+  function applyVariant(variant) {
+    const cfg = getVariantConfig(variant)
+    state.variant = variant
+    state.size = cfg.size
+    state.box = cfg.box
+  }
+
   function init(seedValue) {
-    const { raw } = decodeSeed(seedValue || '')
-    const cleanRaw = raw || randomSeed()
-    const fullSeed = encodeSeed(cleanRaw, state.difficulty)
+    const decoded = decodeSeed(seedValue || '')
+    if (decoded.variant) applyVariant(decoded.variant)
+    const cleanRaw = decoded.raw || randomSeed()
+    const fullSeed = encodeSeed(cleanRaw, state.difficulty, state.variant)
     state.seed = fullSeed
     state.seedDisplay = fullSeed
 
-    const { puzzle, solution } = generatePuzzle(hashSeed(fullSeed), DIFFICULTY[state.difficulty])
+    const removals = DIFFICULTY[state.variant][state.difficulty]
+    const { puzzle, solution } = generatePuzzle(hashSeed(fullSeed), removals, state.variant)
     state.solution = solution
     state.puzzle = puzzle
     state.board = puzzle.map((r) => [...r])
-    state.notes = createEmptyNotes()
-    state.cellOwners = createEmptyOwners()
+    state.notes = createEmptyNotes(state.size)
+    state.cellOwners = createEmptyOwners(state.size)
     state.selected = null
     state.mistakes = 0
     state.playerErrors = {}
@@ -62,25 +76,33 @@ export function useGameState() {
     state.difficultyIdx = idx
   }
 
+  function setVariant(variant) {
+    if (!VARIANT_KEYS.includes(variant) || variant === state.variant) return
+    applyVariant(variant)
+  }
+
   function updateSeedDisplay() {
     const { raw } = decodeSeed(state.seedDisplay)
-    state.seedDisplay = encodeSeed(raw, state.difficulty)
+    state.seedDisplay = encodeSeed(raw, state.difficulty, state.variant)
   }
 
   function parseSeedInput(input) {
-    const { raw, difficulty, idx } = decodeSeed(input.trim())
+    const { raw, difficulty, idx, variant } = decodeSeed(input.trim())
+    if (variant) applyVariant(variant)
     if (difficulty) {
       state.difficulty = difficulty
       state.difficultyIdx = idx
     }
-    return encodeSeed(raw || randomSeed(), state.difficulty)
+    return encodeSeed(raw || randomSeed(), state.difficulty, state.variant)
   }
 
   function cleanNotesFor(r, c, n) {
     const cleaned = []
-    const br = Math.floor(r / 3) * 3
-    const bc = Math.floor(c / 3) * 3
-    for (let i = 0; i < 9; i++) {
+    const box = state.box
+    const size = state.size
+    const br = Math.floor(r / box) * box
+    const bc = Math.floor(c / box) * box
+    for (let i = 0; i < size; i++) {
       if (i !== c && state.notes[r][i].has(n)) {
         cleaned.push({ r, c: i })
         state.notes[r][i].delete(n)
@@ -90,8 +112,8 @@ export function useGameState() {
         state.notes[i][c].delete(n)
       }
     }
-    for (let dr = br; dr < br + 3; dr++) {
-      for (let dc = bc; dc < bc + 3; dc++) {
+    for (let dr = br; dr < br + box; dr++) {
+      for (let dc = bc; dc < bc + box; dc++) {
         if ((dr !== r || dc !== c) && state.notes[dr][dc].has(n)) {
           if (!cleaned.some((x) => x.r === dr && x.c === dc)) cleaned.push({ r: dr, c: dc })
           state.notes[dr][dc].delete(n)
@@ -173,8 +195,9 @@ export function useGameState() {
   }
 
   function checkWin() {
-    for (let r = 0; r < 9; r++)
-      for (let c = 0; c < 9; c++) if (state.board[r][c] !== state.solution[r][c]) return
+    for (let r = 0; r < state.size; r++)
+      for (let c = 0; c < state.size; c++)
+        if (state.board[r][c] !== state.solution[r][c]) return
     state.won = true
     state.selected = null
   }
@@ -189,13 +212,15 @@ export function useGameState() {
 
   function moveSelection(dr, dc) {
     if (!state.selected) return
+    const max = state.size - 1
     state.selected = [
-      Math.max(0, Math.min(8, state.selected[0] + dr)),
-      Math.max(0, Math.min(8, state.selected[1] + dc)),
+      Math.max(0, Math.min(max, state.selected[0] + dr)),
+      Math.max(0, Math.min(max, state.selected[1] + dc)),
     ]
   }
 
   function restoreState(data) {
+    if (data.variant) applyVariant(data.variant)
     state.seed = data.seed
     state.seedDisplay = data.seedDisplay
     state.difficulty = data.difficulty
@@ -207,25 +232,26 @@ export function useGameState() {
     state.mistakes = data.mistakes || 0
     state.history = data.history || []
     state.won = data.won || false
-    state.cellOwners = createEmptyOwners()
+    state.cellOwners = createEmptyOwners(state.size)
     state.playerErrors = {}
     state.selected = null
     state.notesMode = false
   }
 
   function applyPeerSync(data) {
-    const { raw } = decodeSeed(data.seed)
+    if (data.variant) applyVariant(data.variant)
     state.seedDisplay = data.seed
     state.seed = data.seed
     state.difficulty = data.difficulty
     state.difficultyIdx = DIFF_KEYS.indexOf(data.difficulty)
 
-    const { puzzle, solution } = generatePuzzle(hashSeed(state.seed), DIFFICULTY[state.difficulty])
+    const removals = DIFFICULTY[state.variant][state.difficulty]
+    const { puzzle, solution } = generatePuzzle(hashSeed(state.seed), removals, state.variant)
     state.puzzle = puzzle
     state.solution = solution
     state.board = data.board.map((r) => [...r])
-    state.cellOwners = data.cellOwners ? data.cellOwners.map((r) => [...r]) : createEmptyOwners()
-    state.notes = createEmptyNotes()
+    state.cellOwners = data.cellOwners ? data.cellOwners.map((r) => [...r]) : createEmptyOwners(state.size)
+    state.notes = createEmptyNotes(state.size)
     state.selected = null
     state.mistakes = 0
     state.playerErrors = {}
@@ -238,17 +264,19 @@ export function useGameState() {
     // If same seed (reconnection), preserve current board progress
     if (state.seed === newSeed) return
 
+    if (data.variant) applyVariant(data.variant)
     state.seedDisplay = newSeed
     state.seed = newSeed
     state.difficulty = data.difficulty
     state.difficultyIdx = DIFF_KEYS.indexOf(data.difficulty)
 
-    const { puzzle, solution } = generatePuzzle(hashSeed(state.seed), DIFFICULTY[state.difficulty])
+    const removals = DIFFICULTY[state.variant][state.difficulty]
+    const { puzzle, solution } = generatePuzzle(hashSeed(state.seed), removals, state.variant)
     state.puzzle = puzzle
     state.solution = solution
     state.board = puzzle.map((r) => [...r])
-    state.cellOwners = createEmptyOwners()
-    state.notes = createEmptyNotes()
+    state.cellOwners = createEmptyOwners(state.size)
+    state.notes = createEmptyNotes(state.size)
     state.selected = null
     state.mistakes = 0
     state.playerErrors = {}
@@ -277,8 +305,8 @@ export function useGameState() {
 
   function countCorrect() {
     let correct = 0, total = 0
-    for (let r = 0; r < 9; r++)
-      for (let c = 0; c < 9; c++)
+    for (let r = 0; r < state.size; r++)
+      for (let c = 0; c < state.size; c++)
         if (state.puzzle[r][c] === 0) {
           total++
           if (state.board[r][c] === state.solution[r][c]) correct++
@@ -290,6 +318,7 @@ export function useGameState() {
     state,
     init,
     setDifficulty,
+    setVariant,
     updateSeedDisplay,
     parseSeedInput,
     placeNumber,
