@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { decodeSeed, encodeSeed, randomSeed } from './composables/useSudokuEngine.js'
+import { decodeSeed, encodeSeed, randomSeed, parseInputChar } from './composables/useSudokuEngine.js'
 import { useGameState } from './composables/useGameState.js'
 import { useTimer } from './composables/useTimer.js'
 import { useToast } from './composables/useToast.js'
@@ -24,7 +24,7 @@ import WinOverlay from './components/WinOverlay.vue'
 import RaceProgress from './components/RaceProgress.vue'
 import AppToast from './components/AppToast.vue'
 
-const { state, init, setDifficulty, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, restoreState, applyPeerSync, applyPeerSyncRaceMode, applyPeerMove, countCorrect } = useGameState()
+const { state, init, setDifficulty, setVariant, updateSeedDisplay, parseSeedInput, placeNumber, eraseCell, undo, select, toggleNotes, moveSelection, restoreState, applyPeerSync, applyPeerSyncRaceMode, applyPeerMove, countCorrect } = useGameState()
 const timer = useTimer()
 const toast = useToast()
 const { printSudokus } = usePrint()
@@ -76,6 +76,7 @@ const {
           type: 'sync',
           seed: state.seedDisplay,
           difficulty: state.difficulty,
+          variant: state.variant,
           timerStart: timer.getStartTime(),
           raceMode: true,
         })
@@ -84,6 +85,7 @@ const {
           type: 'sync',
           seed: state.seedDisplay,
           difficulty: state.difficulty,
+          variant: state.variant,
           board: state.board.map((r) => [...r]),
           cellOwners: state.cellOwners.map((r) => [...r]),
           timerStart: timer.getStartTime(),
@@ -284,13 +286,13 @@ function startGame(seedValue) {
 }
 
 function onNewGame() {
-  const seed = encodeSeed(randomSeed(), state.difficulty)
+  const seed = encodeSeed(randomSeed(), state.difficulty, state.variant)
   state.seedDisplay = seed
   startGame(seed)
   haptics.medium()
   if (collab.isHost) {
-    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
-    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, state.variant, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.variant, state.board, state.cellOwners, timer.getStartTime())
   }
 }
 
@@ -300,8 +302,8 @@ function onSeedSubmit(input) {
   state.seedDisplay = seed
   startGame(seed)
   if (collab.isHost) {
-    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
-    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, state.variant, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.variant, state.board, state.cellOwners, timer.getStartTime())
   }
 }
 
@@ -309,12 +311,31 @@ function onDifficultyIdxUpdate(idx) {
   setDifficulty(idx)
 }
 
+function onVariantUpdate(variant) {
+  setVariant(variant)
+}
+
+function onVariantChange() {
+  const newSeed = encodeSeed(randomSeed(), state.difficulty, state.variant)
+  state.seedDisplay = newSeed
+  startGame(newSeed)
+  haptics.medium()
+  if (collab.isHost) {
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, state.variant, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.variant, state.board, state.cellOwners, timer.getStartTime())
+  }
+}
+
+function onWaitingRoomVariantChange() {
+  updateSeedDisplay()
+}
+
 function onDifficultyChange() {
   updateSeedDisplay()
   startGame(state.seedDisplay)
   if (collab.isHost) {
-    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, timer.getStartTime())
-    else broadcastFullState(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+    if (collab.gameMode === 'race') broadcastRaceSync(state.seedDisplay, state.difficulty, state.variant, timer.getStartTime())
+    else broadcastFullState(state.seedDisplay, state.difficulty, state.variant, state.board, state.cellOwners, timer.getStartTime())
   }
 }
 
@@ -361,15 +382,15 @@ function onUndo() {
   }
 }
 function onToggleNotes() { toggleNotes(); haptics.selection() }
-function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty) }
+function onPrint() { printSudokus(state.seedDisplay || randomSeed(), state.difficulty, state.variant) }
 function onStartFromWaitingRoom() {
-  const seed = encodeSeed(randomSeed(), state.difficulty)
+  const seed = encodeSeed(randomSeed(), state.difficulty, state.variant)
   state.seedDisplay = seed
   showWin.value = false
   init(seed)
   timer.start()
   haptics.medium()
-  broadcastStartGame(state.seedDisplay, state.difficulty, state.board, state.cellOwners, timer.getStartTime())
+  broadcastStartGame(state.seedDisplay, state.difficulty, state.variant, state.board, state.cellOwners, timer.getStartTime())
   if (collab.gameMode === 'race' && collab.roomId) {
     const { correct, total } = countCorrect()
     broadcastProgress(correct, total, collab.myColor)
@@ -425,8 +446,9 @@ onMounted(() => {
     pendingAction.value = { type: 'join', roomId: urlRoom }
   } else if (urlSeed) {
     const decoded = decodeSeed(urlSeed)
+    if (decoded.variant) setVariant(decoded.variant)
     if (decoded.difficulty) setDifficulty(decoded.idx)
-    const seed = decoded.difficulty ? urlSeed : encodeSeed(decoded.raw, state.difficulty)
+    const seed = decoded.difficulty ? urlSeed : encodeSeed(decoded.raw, state.difficulty, state.variant)
     state.seedDisplay = seed
     startGame(seed)
     window.history.replaceState({}, '', window.location.pathname)
@@ -442,10 +464,13 @@ onMounted(() => {
 
 function onKeydown(e) {
   if (e.target.tagName === 'INPUT') return
-  if (e.key >= '1' && e.key <= '9') onNumber(parseInt(e.key))
-  else if (e.key === 'Backspace' || e.key === 'Delete') onErase()
+  if (e.key === 'Backspace' || e.key === 'Delete') onErase()
   else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) onUndo()
-  else if (e.key === 'n') onToggleNotes()
+  else if (e.key === 'n' || e.key === 'N') onToggleNotes()
+  else if (e.key.length === 1) {
+    const n = parseInputChar(e.key, state.size)
+    if (n !== null) onNumber(n)
+  }
   else if (e.key === 'ArrowUp') { moveSelection(-1, 0); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
   else if (e.key === 'ArrowDown') { moveSelection(1, 0); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
   else if (e.key === 'ArrowLeft') { moveSelection(0, -1); if (collab.gameMode !== 'race') broadcastCursor(state.selected?.[0], state.selected?.[1]) }
@@ -458,7 +483,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 // Start a new game only if no saved progress will be restored on mount
 const saved = loadProgress()
 if (!saved || saved.won) {
-  startGame(encodeSeed(randomSeed(), state.difficulty))
+  startGame(encodeSeed(randomSeed(), state.difficulty, state.variant))
 }
 </script>
 
@@ -491,9 +516,12 @@ if (!saved || saved.won) {
     <GameControls
       :seed-display="state.seedDisplay"
       :difficulty-idx="state.difficultyIdx"
+      :variant="state.variant"
       :disabled="collab.roomId && !collab.waiting"
       @update:seed-display="state.seedDisplay = $event"
       @update:difficulty-idx="onDifficultyIdxUpdate"
+      @update:variant="onVariantUpdate"
+      @variant-change="onVariantChange"
       @difficulty-change="onDifficultyChange"
       @new-game="onNewGame"
       @seed-submit="onSeedSubmit"
@@ -525,8 +553,11 @@ if (!saved || saved.won) {
       :collab="collab"
       :game-mode="collab.gameMode"
       :difficulty-idx="state.difficultyIdx"
+      :variant="state.variant"
       @update:game-mode="collab.gameMode = $event"
       @update:difficulty-idx="onDifficultyIdxUpdate"
+      @update:variant="onVariantUpdate"
+      @variant-change="onWaitingRoomVariantChange"
       @difficulty-change="onWaitingRoomDifficultyChange"
       @start-game="onStartFromWaitingRoom"
       @copy-room-id="onCopyRoomId"
@@ -546,7 +577,7 @@ if (!saved || saved.won) {
       @request-new-game="requestNewGame"
     />
 
-    <NumPad :board="state.board" @number="onNumber" />
+    <NumPad :board="state.board" :size="state.size" @number="onNumber" />
 
     <ActionBar
       :notes-mode="state.notesMode"

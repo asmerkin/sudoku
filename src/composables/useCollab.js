@@ -42,8 +42,8 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'cursor', r, c, color: collab.myColor, name: collab.myName })
   }
 
-  function broadcastFullState(seed, difficulty, board, cellOwners, timerStart) {
-    broadcast({ type: 'sync', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
+  function broadcastFullState(seed, difficulty, variant, board, cellOwners, timerStart) {
+    broadcast({ type: 'sync', seed, difficulty, variant, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart })
   }
 
   function broadcastPeerList() {
@@ -237,17 +237,17 @@ export function useCollab({ onMove, onSync, onHello, onCursor, onToast, onConnCh
     broadcast({ type: 'race-finished', color, finishTime, correct, total })
   }
 
-  function broadcastRaceSync(seed, difficulty, timerStart) {
-    broadcast({ type: 'sync', seed, difficulty, timerStart, raceMode: true })
+  function broadcastRaceSync(seed, difficulty, variant, timerStart) {
+    broadcast({ type: 'sync', seed, difficulty, variant, timerStart, raceMode: true })
   }
 
-  function broadcastStartGame(seed, difficulty, board, cellOwners, timerStart) {
+  function broadcastStartGame(seed, difficulty, variant, board, cellOwners, timerStart) {
     collab.waiting = false
     collab.peerProgress = {}
     if (collab.gameMode === 'race') {
-      broadcast({ type: 'start-game', seed, difficulty, timerStart, gameMode: 'race', raceMode: true })
+      broadcast({ type: 'start-game', seed, difficulty, variant, timerStart, gameMode: 'race', raceMode: true })
     } else {
-      broadcast({ type: 'start-game', seed, difficulty, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart, gameMode: collab.gameMode })
+      broadcast({ type: 'start-game', seed, difficulty, variant, board: board.map((r) => [...r]), cellOwners: cellOwners?.map((r) => [...r]), timerStart, gameMode: collab.gameMode })
     }
   }
 

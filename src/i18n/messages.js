@@ -50,6 +50,9 @@ export const messages = {
     raceWinner: '¡Ganador!',
     raceSolving: 'Resolviendo...',
     difficulty: 'Dificultad',
+    variant: 'Variante',
+    variantSudoku: 'Sudoku',
+    variantHexadoku: 'Hexadoku',
   },
   en: {
     syncedWithHost: 'Synced with host',
@@ -102,5 +105,8 @@ export const messages = {
     raceWinner: 'Winner!',
     raceSolving: 'Solving...',
     difficulty: 'Difficulty',
+    variant: 'Variant',
+    variantSudoku: 'Sudoku',
+    variantHexadoku: 'Hexadoku',
   },
 }

@@ -81,6 +81,11 @@ html {
   --cell-size: 48px;
 }
 
+/* Hexadoku uses smaller cells so the 16x16 grid fits on typical screens. */
+body:has(.board-grid--hexadoku) {
+  --cell-size: 30px;
+}
+
 body {
   background: var(--bg-gradient);
   transition: background 0.25s cubic-bezier(0.4,0,0.2,1), color 0.25s cubic-bezier(0.4,0,0.2,1);
@@ -179,4 +184,17 @@ body {
 /* ── Mobile ── */
 @media (max-width: 480px) {
   :root { --cell-size: 38px; }
+  body:has(.board-grid--hexadoku) { --cell-size: 22px; }
+}
+
+/* ── Print styles for hexadoku ── */
+@media print {
+  .print-grid.print-grid-hex td {
+    width: 5mm; height: 5mm; font-size: 7pt;
+  }
+  /* Reset 3n rules inherited from .print-grid, then apply 4n rules for hexadoku */
+  .print-grid.print-grid-hex td:nth-child(3n) { border-right: 0.3pt solid #bbb; }
+  .print-grid.print-grid-hex tr:nth-child(3n) td { border-bottom: 0.3pt solid #bbb; }
+  .print-grid.print-grid-hex td:nth-child(4n) { border-right: 1.5pt solid #555; }
+  .print-grid.print-grid-hex tr:nth-child(4n) td { border-bottom: 1.5pt solid #555; }
 }

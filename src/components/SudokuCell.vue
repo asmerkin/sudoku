@@ -1,8 +1,13 @@
 <script setup>
+import { computed } from 'vue'
+import { formatValue } from '../composables/useSudokuEngine.js'
+
 const props = defineProps({
   row: Number,
   col: Number,
   value: Number,
+  size: { type: Number, default: 9 },
+  box: { type: Number, default: 3 },
   isGiven: Boolean,
   isSelected: Boolean,
   isHighlighted: Boolean,
@@ -15,11 +20,15 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select'])
+
+const displayValue = computed(() => formatValue(props.value))
+const noteCount = computed(() => props.size) // 9 for sudoku, 16 for hexadoku
+const noteGridCols = computed(() => props.box) // 3 for sudoku, 4 for hexadoku
 </script>
 
 <template>
   <div
-    class="cell flex items-center justify-center font-mono text-xl font-medium
+    class="cell flex items-center justify-center font-mono font-medium
            cursor-pointer border-[0.5px] border-border transition-[background] duration-100
            relative"
     :class="{
@@ -31,21 +40,31 @@ const emit = defineEmits(['select'])
       'bg-error-dim text-error!': isError,
       'bg-accent-glow': isSameNumber && !isSelected,
       'win-cell-flash': won,
+      'text-xl': size === 9,
+      'text-sm': size === 16,
     }"
     :style="[
       ownerColor && !isGiven && !isError ? { color: ownerColor } : {},
-      won ? { animationDelay: (row * 9 + col) * 20 + 'ms' } : {},
+      won ? { animationDelay: (row * size + col) * 20 + 'ms' } : {},
     ]"
     @click="emit('select', row, col)"
   >
-    <template v-if="isGiven || value !== 0">{{ value }}</template>
+    <template v-if="isGiven || value !== 0">{{ displayValue }}</template>
     <div
       v-else-if="notes && notes.size > 0"
-      class="grid grid-cols-3 grid-rows-3 w-full h-full p-px
-             text-text-muted leading-none font-medium font-mono text-[0.6rem]"
+      class="grid w-full h-full p-px text-text-muted leading-none font-medium font-mono"
+      :class="size === 16 ? 'text-[0.38rem]' : 'text-[0.6rem]'"
+      :style="{
+        gridTemplateColumns: `repeat(${noteGridCols}, 1fr)`,
+        gridTemplateRows: `repeat(${noteGridCols}, 1fr)`,
+      }"
     >
-      <span v-for="n in 9" :key="n" class="flex items-center justify-center">
-        {{ notes.has(n) ? n : '' }}
+      <span
+        v-for="n in noteCount"
+        :key="n"
+        class="flex items-center justify-center"
+      >
+        {{ notes.has(n) ? (n < 10 ? n : String.fromCharCode(55 + n)) : '' }}
       </span>
     </div>
     <div
